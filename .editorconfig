@@ -2,7 +2,8 @@ root = true
 
 [*]
 charset = utf-8
-indent_style = tab
+indent_style = space
+indent_size = 2
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
@@ -11,15 +12,16 @@ max_line_length = 80
 [*.{yaml,yml}]
 mode = YAML
 indent_style = space
-indent_size = 2
+indent_size = 4
+
+[*.{sh,bash}]
+mode = Shell Script
+indent_style = space
+indent_size = 4
 
 [*.py]
 mode = Python
 indent_style = space
-indent_size = 4
-
-[*.{conf,config}]
-indent_style = tab
 indent_size = 4
 
 [*.{plist,recipe,pkginfo}]
