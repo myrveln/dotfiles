@@ -12,7 +12,7 @@ max_line_length = 80
 [*.{yaml,yml}]
 mode = YAML
 indent_style = space
-indent_size = 4
+indent_size = 2
 
 [*.{sh,bash}]
 mode = Shell Script
