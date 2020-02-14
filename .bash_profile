@@ -47,3 +47,5 @@ IN="\[\033[0m\]"
 # Prompt
 #export PS1="$NM[ $HI\u $HII\\h $SI\w$NM ] $IN" # hostname
 export PS1="$NM[ $HI\u$HII myrveln $SI\w$NM ] $IN" # hardcoded
+
+export LC_ALL=en_GB.UTF-8
