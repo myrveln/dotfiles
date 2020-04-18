@@ -13,6 +13,14 @@ function BrewInstall() {
 # Make sure we’re using the latest Homebrew.
 brew update
 
+# Make sure that brew doctor doesn't show any warnings
+BREW_DOCTOR="$(brew doctor)"
+if [[ "$?" -gt 0 ]]; then
+    echo "Check output from `brew doctor`:"
+    echo "${BREW_DOCTOR}"
+    exit 1
+fi
+
 # Upgrade any already-installed formulae.
 brew upgrade
 
@@ -21,10 +29,6 @@ BREW_PREFIX=$(brew --prefix)
 
 # Install GNU core utilities (those that come with macOS are outdated).
 BrewInstall coreutils
-if [[ ! -f "${BREW_PREFIX}/bin/sha256sum" ]] && [[ ! -L "${BREW_PREFIX}/bin/sha256sum" ]]; then
-	echo inside
-	ln -s "${BREW_PREFIX}/bin/gsha256sum" "${BREW_PREFIX}/bin/sha256sum"
-fi
 
 # Install latest Bash.
 BrewInstall bash bash-completion2
@@ -48,6 +52,7 @@ BrewInstall emacs \
             wget \
             siege \
             awscli \
+            ansible \
             git \
             googler \
 
