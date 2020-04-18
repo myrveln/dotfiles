@@ -40,7 +40,17 @@ if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
 fi
 
 # Install GnuPG to enable PGP-signing commits.
-BrewInstall gnupg
+BrewInstall gnupg pinentry-mac
+brew unlink gnupg && brew link gnupg
+if [[ -f "${HOME}/.gnupg/gpg-agent.conf" ]]; then
+    if [[ ! $(grep "pinentry-program /usr/local/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
+        echo "pinentry-program /usr/local/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
+        killall gpg-agent
+    fi
+else
+    echo "Could not find gpg-agent.conf."
+    exit 1
+fi
 
 # Install more recent versions of some macOS tools.
 BrewInstall grep openssh screen
