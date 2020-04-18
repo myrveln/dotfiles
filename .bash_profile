@@ -3,7 +3,7 @@
 # 2013-09-05 20:45:32
 
 # Add `~/bin` to the `$PATH`
-export PATH="$HOME/bin:$PATH";
+export PATH="$HOME/bin:/usr/local/sbin:$PATH";
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
