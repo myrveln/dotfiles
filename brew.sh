@@ -2,10 +2,10 @@
 
 # Function to install Brew packages when not already installed.
 function BrewInstall() {
-	for package in ${@}; do
-		local check=$(brew list ${1})
+	for package in "${@}"; do
+		brew list ${package} > /dev/null
 		if [[ $? -ne 0 ]]; then
-			brew install ${package}
+			brew install "${package}"
 		fi
 	done
 }
@@ -41,7 +41,6 @@ fi
 
 # Install GnuPG to enable PGP-signing commits.
 BrewInstall gnupg pinentry-mac
-brew unlink gnupg && brew link gnupg
 if [[ -f "${HOME}/.gnupg/gpg-agent.conf" ]]; then
     if [[ ! $(grep "pinentry-program /usr/local/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
         echo "pinentry-program /usr/local/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
@@ -64,7 +63,14 @@ BrewInstall emacs \
             awscli \
             ansible \
             git \
-            googler \
+
+# Install aws-sam-cli, and enable tap aws/tap
+if ! [[ $(brew tap | grep "aws/tap") ]]; then
+    brew tap aws/tap
+    BrewInstall "aws-sam-cli"
+else
+    BrewInstall "aws-sam-cli"
+fi
 
 # Remove outdated versions from the cellar.
 brew cleanup
