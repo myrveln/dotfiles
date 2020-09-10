@@ -11,6 +11,9 @@ for FILE in ~/.{aliases,functions}; do
 done;
 unset FILE;
 
+# Bash completion
+[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
+
 # Bash and shell programs
 # Skip history spam
 export HISTIGNORE="&:ls:[bf]g:exit"

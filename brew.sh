@@ -63,6 +63,7 @@ BrewInstall emacs \
             awscli \
             ansible \
             git \
+            node \
 
 # Install aws-sam-cli, and enable tap aws/tap
 if ! [[ $(brew tap | grep "aws/tap") ]]; then
