@@ -17,3 +17,6 @@ alias flush="sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder"
 
 # URL-encode strings
 alias urlencode='python -c "import sys, urllib as ul; print ul.quote_plus(sys.argv[1]);"'
+
+# whois.io query alias
+alias vem='f(){ curl -s https://ipwhois.app/json/$1 | jq; unset -f f; }; f'
