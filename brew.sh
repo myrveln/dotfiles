@@ -56,6 +56,7 @@ BrewInstall grep openssh screen
 
 # Install other tools.
 BrewInstall emacs \
+            lzop \
             jq \
             nmap \
             wget \
