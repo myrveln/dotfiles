@@ -2,12 +2,12 @@
 
 # Function to install Brew packages when not already installed.
 function BrewInstall() {
-	for package in "${@}"; do
-		brew list ${package} > /dev/null
-		if [[ $? -ne 0 ]]; then
-			brew install "${package}"
-		fi
-	done
+    for package in "${@}"; do
+	brew list ${package} > /dev/null
+	if [[ $? -ne 0 ]]; then
+	    brew install "${package}"
+	fi
+    done
 }
 
 # Make sure we’re using the latest Homebrew.
@@ -35,8 +35,8 @@ BrewInstall bash bash-completion2
 
 # Switch to using brew-installed bash as default shell
 if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
-  echo "${BREW_PREFIX}/bin/bash" | sudo tee -a /etc/shells
-  chsh -s "${BREW_PREFIX}/bin/bash"
+    echo "${BREW_PREFIX}/bin/bash" | sudo tee -a /etc/shells
+    chsh -s "${BREW_PREFIX}/bin/bash"
 fi
 
 # Install GnuPG to enable PGP-signing commits.
