@@ -2,10 +2,10 @@
 export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 
 # Load the extra shell dotfiles
-for FILE in ~/.{aliases,functions} do
-  [ -r "${FILE}" ] && [ -f "${FILE}" ] && source "${FILE}"
-done
-unset FILE
+for FILE in ~/.{aliases,functions}; do
+	[ -r "${FILE}" ] && [ -f "${FILE}" ] && source "${FILE}";
+done;
+unset FILE;
 
 # Bash completion
 [[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
