@@ -1,15 +1,11 @@
-# Environmental customizations
-# for myrveln@gmail.com
-# 2013-09-05 20:45:32
-
-# Add `~/bin` to the `$PATH`
-export PATH="$HOME/bin:/usr/local/sbin:$PATH";
+# Add `coreutils` binaries to PATH
+export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 
 # Load the extra shell dotfiles
-for FILE in ~/.{aliases,functions}; do
-	[ -r "${FILE}" ] && [ -f "${FILE}" ] && source "${FILE}";
-done;
-unset FILE;
+for FILE in ~/.{aliases,functions} do
+  [ -r "${FILE}" ] && [ -f "${FILE}" ] && source "${FILE}"
+done
+unset FILE
 
 # Bash completion
 [[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
