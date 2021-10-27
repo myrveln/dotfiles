@@ -1,5 +1,5 @@
 # Add `coreutils` binaries to PATH
-export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$HOME/bin:$PATH"
+export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$HOME/bin:/usr/local/sbin:$PATH"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
