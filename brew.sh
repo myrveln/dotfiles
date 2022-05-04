@@ -3,23 +3,18 @@
 # Function to install Brew packages when not already installed.
 function BrewInstall() {
     for package in "${@}"; do
-	brew list ${package} > /dev/null
-	if [[ $? -ne 0 ]]; then
-	    brew install "${package}"
-	fi
+      brew list ${package} > /dev/null
+      if [[ $? -ne 0 ]]; then
+        brew install "${package}"
+      fi
     done
 }
 
 # Make sure we’re using the latest Homebrew.
 brew update
 
-# Make sure that brew doctor doesn't show any warnings
-BREW_DOCTOR="$(brew doctor)"
-if [[ "$?" -gt 0 ]]; then
-    echo "Check output from `brew doctor`:"
-    echo "${BREW_DOCTOR}"
-    exit 1
-fi
+# Display any warnings from `brew doctor`
+brew doctor
 
 # Upgrade any already-installed formulae.
 brew upgrade
