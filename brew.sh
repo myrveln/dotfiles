@@ -31,7 +31,7 @@ BREW_PREFIX=$(brew --prefix)
 BrewInstall coreutils
 
 # Install latest Bash.
-BrewInstall bash bash-completion2
+BrewInstall bash bash-completion@2
 
 # Switch to using brew-installed bash as default shell
 if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
