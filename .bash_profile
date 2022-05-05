@@ -39,6 +39,9 @@ export SCREENRC=${HOME}/.screenrc
 # Silence default shell in macOS
 export BASH_SILENCE_DEPRECATION_WARNING=1
 
+# Disable SAM CLI telemetry collection
+export SAM_CLI_TELEMETRY=0
+
 # Terminal colours (after installing GNU coreutils)
 NM="\[\033[0;38m\]"	  #means no background and white lines
 HI="\[\033[0;37m\]"	  #change this for letter colors
