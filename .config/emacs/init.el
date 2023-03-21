@@ -22,4 +22,4 @@
 ;;; load themes in ~/emacs.d/themes/ folder
 (setq custom--inhibit-theme-enable nil)
 ;(add-to-list custom-theme-load-path "~/.emacs.d/themes/")
-(load-file "~/.emacs.d/themes/afternoon-theme.el")
+(load-file "~/.config/emacs/themes/afternoon-theme.el")
