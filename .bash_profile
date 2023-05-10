@@ -1,5 +1,5 @@
 # Add `coreutils` binaries to PATH
-export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$HOME/bin:/usr/local/sbin:$PATH"
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/opt/homebrew/opt/coreutils/libexec/gnubin:$HOME/bin:/usr/local/sbin:$PATH"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
@@ -8,7 +8,7 @@ done;
 unset FILE;
 
 # Bash completion
-[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
+[[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
 
 # Bash and shell programs
 # Skip history spam
