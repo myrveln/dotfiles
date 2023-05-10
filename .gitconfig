@@ -1,7 +1,7 @@
 # This is Git's per-user configuration file.
 [user]
 	name = Kim Brandt
-	email = kim.brandt@gotamedia.se
+	email = kim.brandt@evolate.com
 	signingkey = 513094BDE476AFD6
 [core]
 	# Use custom `.gitignore` and `.gitattributes`
@@ -44,4 +44,4 @@
 [commit]
 	gpgsign = true
 [gpg]
-	program = /usr/local/bin/gpg
+	program = /opt/homebrew/bin/gpg
