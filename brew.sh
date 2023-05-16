@@ -37,8 +37,8 @@ fi
 # Install GnuPG to enable PGP-signing commits.
 BrewInstall gnupg pinentry-mac
 if [[ -f "${HOME}/.gnupg/gpg-agent.conf" ]]; then
-    if [[ ! $(grep "pinentry-program /usr/local/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
-        echo "pinentry-program /usr/local/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
+    if [[ ! $(grep "pinentry-program /opt/homebrew/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
+        echo "pinentry-program /opt/homebrew/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
         killall gpg-agent
     fi
 else
