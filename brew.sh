@@ -70,5 +70,13 @@ else
     BrewInstall "aws-sam-cli"
 fi
 
+if ! [[ $(brew tap | grep "hashicorp/tap") ]]; then
+    brew tap hashicorp/tap
+    BrewInstall "hashicorp/tap/terraform"
+else
+    BrewInstall "hashicorp/tap/terraform"
+fi
+
+
 # Remove outdated versions from the cellar.
 brew cleanup
