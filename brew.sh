@@ -10,6 +10,19 @@ function BrewInstall() {
     done
 }
 
+# Function to install package from tap.
+function BrewInstallTap() {
+    for item in "${@}"; do
+	local param=(${item//=/ })
+	if ! [[ $(brew tap | grep "${param[0]}") ]]; then
+	    brew tap "${param[0]}"
+	    BrewInstall "${param[1]}"
+	else
+	    BrewInstall "${param[1]}"
+	fi
+    done
+}
+
 # Make sure we’re using the latest Homebrew.
 brew update
 
@@ -62,21 +75,10 @@ BrewInstall emacs \
             node \
             cfn-lint \
 
-# Install aws-sam-cli, and enable tap aws/tap
-if ! [[ $(brew tap | grep "aws/tap") ]]; then
-    brew tap aws/tap
-    BrewInstall "aws-sam-cli"
-else
-    BrewInstall "aws-sam-cli"
-fi
-
-if ! [[ $(brew tap | grep "hashicorp/tap") ]]; then
-    brew tap hashicorp/tap
-    BrewInstall "hashicorp/tap/terraform"
-else
-    BrewInstall "hashicorp/tap/terraform"
-fi
-
+# Install packages that requires tap.
+BrewInstallTap "aws/tap=aws-sam-cli" \
+               "hashicorp/tap=hashicorp/tap/terraform" \
+               "terraform-docs/tap=terraform-docs" \
 
 # Remove outdated versions from the cellar.
 brew cleanup
