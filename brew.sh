@@ -74,6 +74,8 @@ BrewInstall emacs \
             git \
             node \
             cfn-lint \
+	    eksctl \
+	    helm \
 
 # Install packages that requires tap.
 BrewInstallTap "aws/tap=aws-sam-cli" \
