@@ -20,3 +20,6 @@ alias urlencode='python -c "import sys, urllib as ul; print ul.quote_plus(sys.ar
 
 # whois.io query alias
 alias vem='f(){ curl -s https://ipwhois.app/json/$1 | jq; unset -f f; }; f'
+
+# SSO Login to AWS
+alias awslogin="aws sso login --sso-session evolate"
