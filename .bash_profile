@@ -1,6 +1,6 @@
 # Add macOS specific paths to PATH variable when homebrew folder exists
 if [[ -d "/opt/homebrew" ]]; then
-    export PATH="/opt/homebrew/bin:$PATH"
+	export PATH="/opt/homebrew/bin:$PATH"
 	export PATH="/opt/homebrew/sbin:$PATH"
 	export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
 fi
