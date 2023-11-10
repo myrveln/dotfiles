@@ -1,13 +1,20 @@
-# Add `coreutils` binaries to PATH
-export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/opt/homebrew/opt/coreutils/libexec/gnubin:$HOME/bin:/usr/local/sbin:$PATH"
+# Add macOS specific paths to PATH variable when homebrew folder exists
+if [[ -d "/opt/homebrew" ]]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+	export PATH="/opt/homebrew/sbin:$PATH"
+	export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+fi
+
+# Export generic paths to the PATH variable
+export PATH="$HOME/bin:$PATH"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
-	[ -r "${FILE}" ] && [ -f "${FILE}" ] && source "${FILE}";
-done;
-unset FILE;
+	[[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
+done
+unset FILE
 
-# Bash completion
+# Bash completion on macOS
 [[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
 
 # Bash and shell programs
