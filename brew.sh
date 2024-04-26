@@ -59,9 +59,6 @@ else
     exit 1
 fi
 
-# Install more recent versions of some macOS tools.
-BrewInstall grep openssh screen
-
 # Install other tools.
 BrewInstall emacs \
             lzop \
@@ -69,13 +66,18 @@ BrewInstall emacs \
             nmap \
             wget \
             siege \
+            grep \
+            openssh \
+            screen \
             awscli \
             ansible \
             git \
             node \
             cfn-lint \
-	    eksctl \
-	    helm \
+            tflint \
+            eksctl \
+            helm \
+            python-boto3 \
 
 # Install packages that requires tap.
 BrewInstallTap "aws/tap=aws-sam-cli" \
