@@ -1,12 +1,8 @@
-# Add macOS specific paths to PATH variable when homebrew folder exists
-if [[ -d "/opt/homebrew" ]]; then
-	export PATH="/opt/homebrew/bin:$PATH"
-	export PATH="/opt/homebrew/sbin:$PATH"
-	export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
-fi
+# Set `brew` prefix
+BREW_HOME=$(brew --prefix || exit 1)
 
 # Export generic paths to the PATH variable
-export PATH="$HOME/bin:$PATH"
+export PATH="${BREW_HOME}/bin:${BREW_HOME}/sbin:${BREW_HOME}/opt/coreutils/libexec/gnubin:${HOME}/bin:${PATH}"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
@@ -15,7 +11,7 @@ done
 unset FILE
 
 # Bash completion on macOS
-[[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+[[ -r "${BREW_HOME}/etc/profile.d/bash_completion.sh" ]] && . "${BREW_HOME}/etc/profile.d/bash_completion.sh"
 
 # Bash and shell programs
 # Skip history spam

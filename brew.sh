@@ -50,8 +50,8 @@ fi
 # Install GnuPG to enable PGP-signing commits.
 BrewInstall gnupg pinentry-mac
 if [[ -f "${HOME}/.gnupg/gpg-agent.conf" ]]; then
-    if [[ ! $(grep "pinentry-program /opt/homebrew/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
-        echo "pinentry-program /opt/homebrew/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
+    if [[ ! $(grep "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
+        echo "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
         killall gpg-agent
     fi
 else
@@ -77,6 +77,7 @@ BrewInstall emacs \
             tflint \
             eksctl \
             helm \
+	    k9s \
             python-boto3 \
 
 # Install packages that requires tap.
