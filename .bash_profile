@@ -1,17 +1,21 @@
-# Set `brew` prefix
-BREW_HOME=$(brew --prefix || exit 1)
+# Add macOS specific paths to PATH variable when homebrew folder exists
+if [[ -d "/opt/homebrew" ]]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+    export PATH="/opt/homebrew/sbin:$PATH"
+    export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+fi
 
 # Export generic paths to the PATH variable
-export PATH="${BREW_HOME}/bin:${BREW_HOME}/sbin:${BREW_HOME}/opt/coreutils/libexec/gnubin:${HOME}/bin:${PATH}"
+export PATH="$HOME/bin:$PATH"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
-	[[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
+    [[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
 done
 unset FILE
 
 # Bash completion on macOS
-[[ -r "${BREW_HOME}/etc/profile.d/bash_completion.sh" ]] && . "${BREW_HOME}/etc/profile.d/bash_completion.sh"
+[[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
 
 # Bash and shell programs
 # Skip history spam
@@ -46,10 +50,10 @@ export BASH_SILENCE_DEPRECATION_WARNING=1
 export SAM_CLI_TELEMETRY=0
 
 # Terminal colours (after installing GNU coreutils)
-NM="\[\033[0;38m\]"	  #means no background and white lines
-HI="\[\033[0;37m\]"	  #change this for letter colors
-HII="\[\033[0;31m\]"	  #change this for letter colors
-SI="\[\033[0;33m\]"	  #this is for the current directory
+NM="\[\033[0;38m\]"      #means no background and white lines
+HI="\[\033[0;37m\]"      #change this for letter colors
+HII="\[\033[0;31m\]"      #change this for letter colors
+SI="\[\033[0;33m\]"      #this is for the current directory
 IN="\[\033[0m\]"
 
 # Prompt
