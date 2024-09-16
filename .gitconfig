@@ -1,7 +1,8 @@
 # This is Git's per-user configuration file.
 [user]
 	name = Kim Brandt
-	email = kim.brandt@evolate.com
+	email = kim.brandt@atg.se
+	# email = myrveln@gmail.com
 	signingkey = 513094BDE476AFD6
 [core]
 	# Use custom `.gitignore` and `.gitattributes`
