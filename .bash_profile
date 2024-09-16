@@ -5,6 +5,11 @@ if [[ -d "/opt/homebrew" ]]; then
     export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
 fi
 
+# Add Rancher Desktop binary to PATH
+if [[ -d "${HOME}/.rd/bin" ]]; then
+    export PATH="${HOME}/.rd/bin:$PATH"
+fi
+
 # Export generic paths to the PATH variable
 export PATH="$HOME/bin:$PATH"
 
