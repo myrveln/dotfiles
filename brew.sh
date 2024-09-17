@@ -78,7 +78,6 @@ BrewInstall emacs \
             eksctl \
             helm \
 	    k9s \
-            python-boto3 \
 
 # Install packages that requires tap.
 BrewInstallTap "aws/tap=aws-sam-cli" \
