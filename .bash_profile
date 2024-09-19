@@ -10,6 +10,11 @@ if [[ -d "${HOME}/.rd/bin" ]]; then
     export PATH="${HOME}/.rd/bin:$PATH"
 fi
 
+# Add Visual Studio Code alias `code` to PATH
+if [[ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]]; then
+    export PATH="/Applications/Visual Studio Code.app/Contents/Resources/app/bin:$PATH"
+fi
+
 # Export generic paths to the PATH variable
 export PATH="$HOME/bin:$PATH"
 
