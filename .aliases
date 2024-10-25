@@ -22,4 +22,4 @@ alias urlencode='python -c "import sys, urllib as ul; print ul.quote_plus(sys.ar
 alias vem='f(){ curl -s https://ipwhois.app/json/$1 | jq; unset -f f; }; f'
 
 # add granted `assume` alias
-alias assume="source /usr/local/bin/assume"
+alias assume="source /opt/homebrew/bin/assume"
