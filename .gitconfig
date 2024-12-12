@@ -4,6 +4,8 @@
 	email = kim.brandt@atg.se
 	# email = myrveln@gmail.com
 	signingkey = 513094BDE476AFD6
+[github]
+	user = myrveln
 [core]
 	# Use custom `.gitignore` and `.gitattributes`
 	excludesfile = ~/.gitignore
