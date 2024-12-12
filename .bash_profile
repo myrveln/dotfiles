@@ -19,13 +19,16 @@ fi
 export PATH="$HOME/bin:$PATH"
 
 # Load the extra shell dotfiles
-for FILE in ~/.{aliases,functions}; do
+for FILE in ~/.{aliases,functions,bash_completion}; do
     [[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
 done
 unset FILE
 
 # Bash completion on macOS
 [[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+
+# Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
+[ -e "${HOME}/.ssh/config" ] && complete -o "default" -o "nospace" -W "$(grep "^host" ~/.ssh/config | grep -v "[?*]" | cut -d " " -f2- | tr ' ' '\n')" scp sftp ssh;
 
 # Bash and shell programs
 # Skip history spam
