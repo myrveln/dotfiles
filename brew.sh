@@ -77,7 +77,8 @@ BrewInstall emacs \
             tflint \
             eksctl \
             helm \
-	    k9s \
+            k9s \
+            tree \
 
 # Install packages that requires tap.
 BrewInstallTap "aws/tap=aws-sam-cli" \
