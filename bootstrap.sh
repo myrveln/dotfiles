@@ -10,6 +10,7 @@ function Execute() {
 	  --exclude ".DS_Store" \
 	  --exclude "bootstrap.sh" \
 	  --exclude "brew.sh" \
+	  --exclude "macos.sh" \
 	  -avh --no-perms . ~
     source ~/.bash_profile
 }
