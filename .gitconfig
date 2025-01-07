@@ -54,6 +54,9 @@
 	amendpush = !git add . && git commit --amend --no-edit && git push --force
 [commit]
 	gpgsign = true
+[push]
+  # Automatically set origin as the remote for current branch
+  autoSetupRemote = true
 [gpg]
 	program = /opt/homebrew/bin/gpg
 	#program = /usr/local/bin/gpg
