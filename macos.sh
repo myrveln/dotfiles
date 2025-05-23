@@ -402,6 +402,14 @@ defaults write com.apple.messageshelper.MessageController SOInputLineSettings -d
 # Disable continuous spell checking
 defaults write com.apple.messageshelper.MessageController SOInputLineSettings -dict-add "continuousSpellCheckingEnabled" -bool false
 
+
+###############################################################################
+# Chrome                                                                      #
+###############################################################################
+
+# Make Chrome remember desktop assignments
+defaults write com.google.Chrome NSWindowRestoresWorkspaceAtLaunch -bool YES
+
 ###############################################################################
 # Kill affected applications                                                  #
 ###############################################################################
