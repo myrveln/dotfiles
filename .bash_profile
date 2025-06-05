@@ -15,6 +15,11 @@ if [[ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]]; t
     export PATH="/Applications/Visual Studio Code.app/Contents/Resources/app/bin:$PATH"
 fi
 
+# Add Linkerd binary to PATH
+if [[ -d "${HOME}/.linkerd2/bin" ]]; then
+    export PATH="${HOME}/.linkerd2/bin:$PATH"
+fi
+
 # Export generic paths to the PATH variable
 export PATH="$HOME/bin:$PATH"
 
