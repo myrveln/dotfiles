@@ -1,0 +1,33 @@
+# Local/private overrides for the `cl` helper
+#
+# Copy this file to ~/.config/clusters.local and fill in your endpoints.
+# This file is intentionally git-ignored by this repo.
+
+# --- EKS settings (required for `cl eks-*`) ---
+#
+# `cl eks-<env>` is configured in exactly one way:
+#
+# 1) AWS profile for `assume` is derived as:
+#      ${CL_AWS_PROFILE_PREFIX}${CL_AWS_PROFILE_SEPARATOR}${env}
+#    where CL_AWS_PROFILE_SEPARATOR defaults to "-".
+#
+# 2) EKS cluster name is derived from a template containing `{env}`:
+#      ${CL_EKS_CLUSTER_NAME_TEMPLATE}  (with {env} replaced)
+#
+# Examples:
+# export CL_AWS_PROFILE_PREFIX="<your-sso-prefix>-"
+# export CL_AWS_PROFILE_SEPARATOR="-"
+# export CL_EKS_CLUSTER_NAME_TEMPLATE="<prefix-name>-{env}-<suffix-name>"
+
+# Optional: region used for `aws eks update-kubeconfig`
+# export CL_EKS_REGION="eu-north-1"
+
+# Per-environment OpenShift API endpoints
+# (env name is the part after ocp-, uppercased; dashes become underscores)
+#
+# Example:
+# export CL_OCP_SERVER_TEST="https://api.<your-private-domain>:6443"
+# export CL_OCP_SERVER_PROD="https://api.<your-private-domain>:6443"
+
+# Optional fallback if you only ever use one OCP server:
+# export CL_OCP_SERVER="https://api.<your-private-domain>:6443"
