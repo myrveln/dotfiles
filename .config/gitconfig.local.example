@@ -1,0 +1,18 @@
+# Private Git config (NOT committed)
+#
+# Copy to: ~/.config/gitconfig.local
+# This file is intentionally git-ignored by the dotfiles repo.
+
+[user]
+	name = Your Name
+	email = you@example.com
+	# signingkey = <YOUR_GPG_KEY_ID>
+
+[commit]
+	# Enable if you want signed commits everywhere
+	# gpgsign = true
+
+[gpg]
+	# Adjust to your installation path
+	# program = /opt/homebrew/bin/gpg
+	# program = /usr/local/bin/gpg
