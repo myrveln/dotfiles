@@ -24,7 +24,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 
 # Load the extra shell dotfiles
-for FILE in ~/.{aliases,functions,clusters}; do
+for FILE in ~/.{aliases,functions}; do
     [[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
 done
 unset FILE

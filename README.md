@@ -36,7 +36,7 @@ It will adjust various macOS preferences, such as UI/UX enhancements, Dock setti
 
 ## Cluster login helper (`cl`)
 
-This repo includes a `cl` helper (loaded from `~/.clusters`) for logging into EKS (`eks-<env>`) and OpenShift (`ocp-<env>`).
+This repo includes a `cl` helper (installed as `~/bin/cl` from this repo's `bin/cl`) for logging into EKS (`eks-<env>`) and OpenShift (`ocp-<env>`).
 
 Options:
 

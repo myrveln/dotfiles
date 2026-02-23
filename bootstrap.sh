@@ -12,7 +12,7 @@ function Execute() {
 	  --exclude "bootstrap.sh" \
 	  --exclude "brew.sh" \
 	  --exclude "macos.sh" \
-	  -avh --no-perms . ~
+      -avh . ~
     source ~/.bash_profile
 }
 
