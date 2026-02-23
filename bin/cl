@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+
+# Cluster login helper
+#
+# This is an executable version of the old shell function.
+# Private/work-specific config should live in:
+#   - ~/.config/clusters.local
+
+# Optional local overrides (keep private; not meant for git)
+# Prefer ~/.config so it naturally lives under your dotfiles-managed .config/.
+if [[ -r "${HOME}/.config/clusters.local" ]] && [[ -f "${HOME}/.config/clusters.local" ]]; then
+    # shellcheck disable=SC1090
+    source "${HOME}/.config/clusters.local"
+fi
+
+_cl_has() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+_cl_start_k9s() {
+    local namespace="${1:-default}"
+    local namespace_explicit="${2:-0}"
+
+    _cl_has k9s || {
+        echo "cl: k9s not found" >&2
+        return 127
+    }
+
+    if [[ "${namespace_explicit}" -eq 1 ]]; then
+        k9s -n "${namespace}"
+    else
+        k9s
+    fi
+}
+
+_cl_assume() {
+    local profile="$1"
+
+    if type assume >/dev/null 2>&1; then
+        # In this repo, assume is typically an alias to: source /opt/homebrew/bin/assume
+        assume "${profile}"
+        return $?
+    fi
+
+    if [[ -r "/opt/homebrew/bin/assume" ]]; then
+        # Fallback if alias/function not loaded for some reason.
+        # shellcheck disable=SC1091
+        source "/opt/homebrew/bin/assume" "${profile}"
+        return $?
+    fi
+
+    echo "cl: 'assume' not found. Install granted/assume or ensure it's loaded." >&2
+    return 127
+}
+
+_cl_env_to_var_suffix() {
+    # Convert env like "test" or "my-env" to "TEST" / "MY_ENV"
+    printf '%s' "$1" | tr '[:lower:]-' '[:upper:]_'
+}
+
+_cl_ocp_server_for_env() {
+    local env="$1"
+    local key
+    key="CL_OCP_SERVER_$(_cl_env_to_var_suffix "${env}")"
+
+    if [[ -n "${!key:-}" ]]; then
+        printf '%s' "${!key}"
+        return 0
+    fi
+
+    if [[ -n "${CL_OCP_SERVER:-}" ]]; then
+        printf '%s' "${CL_OCP_SERVER}"
+        return 0
+    fi
+
+    return 1
+}
+
+_cl_aws_profile_for_env() {
+    local env="$1"
+    local sep
+    if [[ -z "${CL_AWS_PROFILE_PREFIX:-}" ]]; then
+        echo "cl: missing required EKS config: CL_AWS_PROFILE_PREFIX" >&2
+        echo "cl: set it in ~/.config/clusters.local (example: export CL_AWS_PROFILE_PREFIX='<your-sso-prefix>-')" >&2
+        return 2
+    fi
+
+    sep="${CL_AWS_PROFILE_SEPARATOR--}"
+
+    # If prefix already ends with the separator (or separator is empty), don't add it again.
+    if [[ -z "${sep}" ]] || [[ "${CL_AWS_PROFILE_PREFIX}" == *"${sep}" ]]; then
+        printf '%s' "${CL_AWS_PROFILE_PREFIX}${env}"
+    else
+        printf '%s' "${CL_AWS_PROFILE_PREFIX}${sep}${env}"
+    fi
+}
+
+_cl_eks_cluster_name_for_env() {
+    local env="$1"
+    if [[ -z "${CL_EKS_CLUSTER_NAME_TEMPLATE:-}" ]]; then
+        echo "cl: missing required EKS config: CL_EKS_CLUSTER_NAME_TEMPLATE" >&2
+        echo "cl: set it in ~/.config/clusters.local (example: export CL_EKS_CLUSTER_NAME_TEMPLATE='my-eun1-{env}-platform-eks')" >&2
+        return 2
+    fi
+
+    if [[ "${CL_EKS_CLUSTER_NAME_TEMPLATE}" != *"{env}"* ]]; then
+        echo "cl: CL_EKS_CLUSTER_NAME_TEMPLATE must contain '{env}'" >&2
+        return 2
+    fi
+
+    printf '%s' "${CL_EKS_CLUSTER_NAME_TEMPLATE//\{env\}/${env}}"
+}
+
+_cl_login_eks() {
+    local env="$1"
+    local context="$2"
+    local namespace="${3:-default}"
+
+    local region="${CL_EKS_REGION:-eu-north-1}"
+    local aws_profile
+    local cluster_name
+
+    aws_profile="$(_cl_aws_profile_for_env "${env}")" || return $?
+
+    cluster_name="$(_cl_eks_cluster_name_for_env "${env}")" || return $?
+
+    _cl_has aws || { echo "cl: aws not found" >&2; return 127; }
+    _cl_has kubectl || { echo "cl: kubectl not found" >&2; return 127; }
+
+    _cl_assume "${aws_profile}" || return $?
+
+    aws eks update-kubeconfig --region "${region}" --name "${cluster_name}" --alias "${context}" || return $?
+
+    if _cl_has kubectx; then
+        kubectx "${context}" || return $?
+    else
+        kubectl config use-context "${context}" || return $?
+    fi
+
+    if _cl_has kubens; then
+        kubens "${namespace}" || return $?
+    else
+        kubectl config set-context --current --namespace="${namespace}" >/dev/null || return $?
+    fi
+
+    echo "cl: active context -> $(kubectl config current-context) (ns: ${namespace})"
+}
+
+_cl_login_ocp() {
+    local env="$1"
+    local desired_context="$2"
+    local namespace="${3:-default}"
+
+    local server
+    server="$(_cl_ocp_server_for_env "${env}")" || {
+        echo "cl: no OpenShift API endpoint configured for env '${env}'" >&2
+        echo "cl: set CL_OCP_SERVER_<ENV> (ENV is uppercased; '-' -> '_'), CL_OCP_SERVER, or add it to ~/.config/clusters.local" >&2
+        echo "cl: example: export CL_OCP_SERVER_TEST='https://api.<redacted>:6443'" >&2
+        return 2
+    }
+
+    _cl_has oc || { echo "cl: oc not found" >&2; return 127; }
+    _cl_has kubectl || { echo "cl: kubectl not found" >&2; return 127; }
+
+    oc login --server "${server}" --web || return $?
+
+    local current_context
+    current_context="$(kubectl config current-context 2>/dev/null)" || return $?
+
+    # Replace any previous context with the friendly name
+    kubectl config delete-context "${desired_context}" >/dev/null 2>&1 || true
+    kubectl config rename-context "${current_context}" "${desired_context}" || return $?
+
+    if _cl_has kubectx; then
+        kubectx "${desired_context}" || return $?
+    else
+        kubectl config use-context "${desired_context}" >/dev/null || return $?
+    fi
+
+    if _cl_has kubens; then
+        kubens "${namespace}" || return $?
+    else
+        kubectl config set-context --current --namespace="${namespace}" >/dev/null || return $?
+    fi
+
+    echo "cl: active context -> $(kubectl config current-context) (ns: ${namespace})"
+}
+
+main() {
+    local target=""
+    local namespace="default"
+    local namespace_explicit=0
+    local start_k9s=0
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -n|--namespace)
+                shift
+                if [[ -z "${1:-}" ]]; then
+                    echo "cl: missing value for -n/--namespace" >&2
+                    return 2
+                fi
+                namespace="$1"
+                namespace_explicit=1
+                shift
+                ;;
+            --k9s)
+                start_k9s=1
+                shift
+                ;;
+            -h|--help)
+                target=""
+                break
+                ;;
+            --)
+                shift
+                break
+                ;;
+            -* )
+                echo "cl: unknown option '$1'" >&2
+                return 2
+                ;;
+            *)
+                if [[ -z "${target}" ]]; then
+                    target="$1"
+                    shift
+                else
+                    echo "cl: unexpected argument '$1'" >&2
+                    return 2
+                fi
+                ;;
+        esac
+    done
+
+    if [[ -z "${target}" ]]; then
+        cat <<'EOF'
+Usage:
+    cl eks-<env> [-n <namespace>] [--k9s]   Login to EKS (requires local config)
+    cl ocp-<env> [-n <namespace>] [--k9s]   Login to OpenShift (web login)
+
+Examples:
+    cl eks-test
+    cl eks-test -n foo
+    cl eks-test --k9s
+    cl eks-test -n foo --k9s
+    cl ocp-test
+    cl ocp-test -n bar
+    cl ocp-test --k9s
+EOF
+        return 2
+    fi
+
+    case "${target}" in
+        eks-*)
+            _cl_login_eks "${target#eks-}" "${target}" "${namespace}" || return $?
+            ;;
+        ocp-*)
+            _cl_login_ocp "${target#ocp-}" "${target}" "${namespace}" || return $?
+            ;;
+        *)
+            echo "cl: unknown target '${target}' (expected eks-* or ocp-*)" >&2
+            return 2
+            ;;
+    esac
+
+    if [[ ${start_k9s} -eq 1 ]]; then
+        _cl_start_k9s "${namespace}" "${namespace_explicit}"
+    fi
+}
+
+main "$@"
