@@ -36,6 +36,29 @@ _cl_start_k9s() {
 _cl_assume() {
     local profile="$1"
 
+    # Granted's `assume` expects to be sourced (typically via an alias like:
+    #   alias assume='source /opt/homebrew/bin/assume'
+    # Executing it directly can trigger an interactive prompt to install that alias.
+    # To keep `cl` non-interactive, prefer sourcing the resolved assume script.
+
+    local assume_type
+    assume_type="$(type -t assume 2>/dev/null || true)"
+
+    if [[ "${assume_type}" == "alias" ]] || [[ "${assume_type}" == "function" ]]; then
+        assume "${profile}"
+        return $?
+    fi
+
+    if [[ "${assume_type}" == "file" ]]; then
+        local assume_path
+        assume_path="$(command -v assume 2>/dev/null || true)"
+        if [[ -n "${assume_path}" ]] && [[ -r "${assume_path}" ]]; then
+            # shellcheck disable=SC1090
+            source "${assume_path}" "${profile}"
+            return $?
+        fi
+    fi
+
     if type assume >/dev/null 2>&1; then
         # In this repo, assume is typically an alias to: source /opt/homebrew/bin/assume
         assume "${profile}"
