@@ -20,12 +20,20 @@ cd ~/dotfiles
 
 ## Additional Setup Scripts
 
-### `brew.sh`
-This script installs essential packages and applications using Homebrew. To run it:
+### Homebrew (`Brewfile` / `brew.sh`)
+Packages are tracked in `Brewfile` and installed via `brew bundle`.
+
+To install everything:
+```bash
+brew bundle --file Brewfile
+```
+
+Or run the helper script (does `brew update/doctor/upgrade`, runs `brew bundle`, and applies a couple of extra tweaks like setting the default shell + GPG pinentry):
 ```bash
 ./brew.sh
 ```
-This will install packages defined in the script, ensuring your system has all necessary dependencies.
+
+If Homebrew isn't installed yet, `brew.sh` will install it first.
 
 ### `macos.sh`
 This script applies macOS system settings for an optimized workflow. Run it with:

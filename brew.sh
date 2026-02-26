@@ -1,27 +1,35 @@
 #!/usr/bin/env bash
 
-# Function to install Brew packages when not already installed.
-function BrewInstall() {
-    for package in "${@}"; do
-      brew list ${package} > /dev/null
-      if [[ $? -ne 0 ]]; then
-        brew install "${package}"
-      fi
-    done
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+ensure_homebrew() {
+    if command -v brew >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo "Homebrew not found. Installing..."
+
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "Error: curl is required to install Homebrew." >&2
+        return 1
+    fi
+
+    # Official installer (interactive as needed).
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Make `brew` available in the current shell.
+    if [[ -x "/opt/homebrew/bin/brew" ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -x "/usr/local/bin/brew" ]]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
+    command -v brew >/dev/null 2>&1
 }
 
-# Function to install package from tap.
-function BrewInstallTap() {
-    for item in "${@}"; do
-	local param=(${item//=/ })
-	if ! [[ $(brew tap | grep "${param[0]}") ]]; then
-	    brew tap "${param[0]}"
-	    BrewInstall "${param[1]}"
-	else
-	    BrewInstall "${param[1]}"
-	fi
-    done
-}
+ensure_homebrew
 
 # Make sure we’re using the latest Homebrew.
 brew update
@@ -35,11 +43,8 @@ brew upgrade
 # Save Homebrew’s installed location.
 BREW_PREFIX=$(brew --prefix)
 
-# Install GNU core utilities (those that come with macOS are outdated).
-BrewInstall coreutils
-
-# Install latest Bash.
-BrewInstall bash bash-completion@2
+# Install packages/casks/taps from Brewfile.
+brew bundle --file "${SCRIPT_DIR}/Brewfile"
 
 # Switch to using brew-installed bash as default shell
 if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
@@ -47,43 +52,17 @@ if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
     chsh -s "${BREW_PREFIX}/bin/bash"
 fi
 
-# Install GnuPG to enable PGP-signing commits.
-BrewInstall gnupg pinentry-mac
-if [[ -f "${HOME}/.gnupg/gpg-agent.conf" ]]; then
-    if [[ ! $(grep "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" "${HOME}/.gnupg/gpg-agent.conf") ]]; then
-        echo "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" >> "${HOME}/.gnupg/gpg-agent.conf"
-        killall gpg-agent
-    fi
-else
-    echo "Could not find gpg-agent.conf."
-    exit 1
+# Configure GnuPG pinentry (Brewfile installs gnupg + pinentry-mac).
+mkdir -p "${HOME}/.gnupg"
+chmod 700 "${HOME}/.gnupg" || true
+
+GPG_AGENT_CONF="${HOME}/.gnupg/gpg-agent.conf"
+touch "${GPG_AGENT_CONF}"
+
+if ! grep -q "^pinentry-program ${BREW_PREFIX}/bin/pinentry-mac$" "${GPG_AGENT_CONF}"; then
+    echo "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" >> "${GPG_AGENT_CONF}"
+    killall gpg-agent 2>/dev/null || true
 fi
-
-# Install other tools.
-BrewInstall emacs \
-            lzop \
-            jq \
-            nmap \
-            wget \
-            siege \
-            grep \
-            openssh \
-            screen \
-            awscli \
-            ansible \
-            git \
-            node \
-            cfn-lint \
-            tflint \
-            eksctl \
-            helm \
-            k9s \
-            tree \
-
-# Install packages that requires tap.
-BrewInstallTap "aws/tap=aws-sam-cli" \
-               "hashicorp/tap=hashicorp/tap/terraform" \
-               "terraform-docs/tap=terraform-docs" \
 
 # Remove outdated versions from the cellar.
 brew cleanup
