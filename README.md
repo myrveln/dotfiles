@@ -85,6 +85,7 @@ This repository is public, so personal/work-specific settings should live in loc
 
 - Git identity + optional GPG setup: copy `.config/gitconfig.local.example` to `~/.config/gitconfig.local`
 - OpenShift endpoints: copy `.config/clusters.local.example` to `~/.config/clusters.local`
+- Generic local settings (including a stable prompt hostname): copy `.config/generic.local.example` to `~/.config/generic.local`
 
 ## License
 This repository is open-source. Feel free to use and modify it as needed.

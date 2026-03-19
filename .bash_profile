@@ -74,8 +74,13 @@ HII="\[\033[0;31m\]"      #change this for letter colors
 SI="\[\033[0;33m\]"      #this is for the current directory
 IN="\[\033[0m\]"
 
+# Local/private overrides (not tracked)
+for GENERIC_FILE in "${HOME}/.config/generic" "${HOME}/.config/generic.local"; do
+    [[ -r "${GENERIC_FILE}" ]] && [[ -f "${GENERIC_FILE}" ]] && source "${GENERIC_FILE}"
+done
+unset GENERIC_FILE
+
 # Prompt
-export PS1="$NM[ $HI\u $HII\\h $SI\w$NM ] $IN" # hostname
-#export PS1="$NM[ $HI\u$HII myrveln $SI\w$NM ] $IN" # hardcoded
+export PS1="$NM[ $HI\u $HII${DOTFILES_PROMPT_HOST:-\\h} $SI\w$NM ] $IN" # hostname override via DOTFILES_PROMPT_HOST
 
 export LC_ALL=en_GB.UTF-8
