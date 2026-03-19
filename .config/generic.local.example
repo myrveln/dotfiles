@@ -1,0 +1,5 @@
+# Generic config
+# Copy this file to ~/.config/generic (tracked by you or kept local)
+
+# Hardcode the hostname shown in the Bash prompt (PS1)
+export DOTFILES_PROMPT_HOST="myrveln"
