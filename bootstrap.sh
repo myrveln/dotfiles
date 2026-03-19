@@ -8,6 +8,7 @@ function Execute() {
     rsync --exclude ".git/" \
 	  --exclude ".gitignore" \
 	  --exclude ".DS_Store" \
+	  --exclude "Brewfile" \
 	  --exclude "README.md" \
 	  --exclude "bootstrap.sh" \
 	  --exclude "brew.sh" \
