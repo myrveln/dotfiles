@@ -134,6 +134,20 @@ _cl_eks_cluster_name_for_env() {
     printf '%s' "${CL_EKS_CLUSTER_NAME_TEMPLATE//\{env\}/${env}}"
 }
 
+_cl_ensure_aws_profile_ready() {
+    local profile="$1"
+
+    # If the profile can already call STS, it is ready to use.
+    if aws sts get-caller-identity --profile "${profile}" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Granted/assume can have valid env creds while AWS CLI profile SSO cache is
+    # missing. Ensure profile-based CLI calls can proceed.
+    aws sso login --profile "${profile}" || return $?
+    aws sts get-caller-identity --profile "${profile}" >/dev/null 2>&1 || return $?
+}
+
 _cl_login_eks() {
     local env="$1"
     local context="$2"
@@ -151,8 +165,11 @@ _cl_login_eks() {
     _cl_has kubectl || { echo "cl: kubectl not found" >&2; return 127; }
 
     _cl_assume "${aws_profile}" || return $?
+    _cl_ensure_aws_profile_ready "${aws_profile}" || return $?
 
-    aws eks update-kubeconfig --region "${region}" --name "${cluster_name}" --alias "${context}" || return $?
+    # Ensure kubeconfig stores the intended profile; `cl` runs as a subprocess,
+    # so exported vars from `assume` do not persist in the parent shell.
+    aws eks update-kubeconfig --profile "${aws_profile}" --region "${region}" --name "${cluster_name}" --alias "${context}" || return $?
 
     if _cl_has kubectx; then
         kubectx "${context}" || return $?
