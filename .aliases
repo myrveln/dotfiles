@@ -37,5 +37,8 @@ alias urlencode='python -c "import sys, urllib as ul; print ul.quote_plus(sys.ar
 # whois.io query alias
 alias vem='f(){ curl -s https://ipwhois.app/json/$1 | jq; unset -f f; }; f'
 
+# DNS lookup with short output
+alias digs='dig +short'
+
 # add granted `assume` alias
 alias assume="source /opt/homebrew/bin/assume"
