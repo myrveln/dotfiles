@@ -60,7 +60,8 @@ env_suffix() {
 
 ocp_server_for_env() {
     local env="$1"
-    local key="CL_OCP_SERVER_$(env_suffix "${env}")"
+    local key
+    key="CL_OCP_SERVER_$(env_suffix "${env}")"
 
     if [[ -n "${!key:-}" ]]; then
         printf '%s' "${!key}"
