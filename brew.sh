@@ -3,6 +3,15 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUN_LOCK_DIR="${TMPDIR:-/tmp}/brew-sh.lock"
+
+# Prevent concurrent runs, which can collide on Homebrew lock files.
+if ! mkdir "${RUN_LOCK_DIR}" 2>/dev/null; then
+    echo "Another brew.sh run is already in progress. Wait for it to finish and try again." >&2
+    exit 1
+fi
+
+trap 'rmdir "${RUN_LOCK_DIR}" >/dev/null 2>&1 || true' EXIT
 
 ensure_homebrew() {
     if command -v brew >/dev/null 2>&1; then
@@ -35,7 +44,9 @@ ensure_homebrew
 brew update
 
 # Display any warnings from `brew doctor`
-brew doctor
+if ! brew doctor; then
+    echo "'brew doctor' reported warnings; continuing with upgrades."
+fi
 
 # Upgrade any already-installed formulae.
 brew upgrade
