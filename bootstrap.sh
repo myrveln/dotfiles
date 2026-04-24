@@ -7,6 +7,7 @@ git pull origin master --quiet
 function Execute() {
     rsync --exclude ".git/" \
 	  --exclude ".gitignore" \
+      --exclude ".github/" \
 	  --exclude ".DS_Store" \
 	  --exclude "Brewfile" \
 	  --exclude "README.md" \
