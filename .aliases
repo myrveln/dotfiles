@@ -10,6 +10,7 @@ else # macOS `ls`
 fi
 
 # Always use color output for `ls`
+# shellcheck disable=SC2139  # colorflag is intentionally expanded at definition time
 alias ls="command ls ${colorflag} -hF"
 alias ll='ls ${colorflag} -lhF'
 alias l='ls ${colorflag} -lAhF'
@@ -35,7 +36,7 @@ alias flush="dscacheutil -flushcache && killall -HUP mDNSResponder"
 alias urlencode='python -c "import sys, urllib as ul; print ul.quote_plus(sys.argv[1]);"'
 
 # whois.io query alias
-alias vem='f(){ curl -s https://ipwhois.app/json/$1 | jq; unset -f f; }; f'
+vem() { curl -s "https://ipwhois.app/json/$1" | jq; }
 
 # DNS lookup with short output
 alias digs='dig +short'

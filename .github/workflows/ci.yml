@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash syntax check
+        run: |
+          find . \
+            \( -name '*.sh' -o -path './bin/*' \) \
+            -not -path './.git/*' \
+            -print \
+          | xargs -I{} bash -n {}
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          additional_files: 'bin/cl bin/curltime .aliases .bash_profile .bashrc'
+          severity: warning
+
+      - name: EditorConfig
+        uses: editorconfig-checker/action-editorconfig-checker@main
+
+  brewfile:
+    name: Brewfile syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Brewfile syntax
+        # Stub the Homebrew DSL methods so we can validate Ruby syntax and
+        # catch obvious typos (invalid formula names, bad tap strings, etc.)
+        # without requiring a real Homebrew installation.
+        run: |
+          ruby - <<'EOF'
+          [:tap, :brew, :cask, :mas, :whalebrew, :vscode].each do |m|
+            define_method(m) { |*_args, **_kwargs| }
+          end
+          load 'Brewfile'
+          puts "Brewfile OK"
+          EOF
