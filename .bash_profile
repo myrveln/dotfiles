@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Add macOS specific paths to PATH variable when homebrew folder exists
 if [[ -d "/opt/homebrew" ]]; then
     export PATH="/opt/homebrew/bin:$PATH"
@@ -25,6 +26,7 @@ export PATH="$HOME/bin:$PATH"
 
 # Load the extra shell dotfiles
 for FILE in ~/.{aliases,functions}; do
+    # shellcheck source=/dev/null
     [[ -r "${FILE}" ]] && [[ -f "${FILE}" ]] && source "${FILE}"
 done
 unset FILE
@@ -41,7 +43,8 @@ export HISTIGNORE="&:ls:[bf]g:exit"
 export HISTCONTROL="ignoredups"
 
 # Enable TTY for gpg commit sign
-export GPG_TTY=$(tty)
+GPG_TTY=$(tty)
+export GPG_TTY
 
 # Skip suffixes in tab completion
 export FIGNORE=".o:~"
@@ -76,11 +79,12 @@ IN="\[\033[0m\]"
 
 # Local/private overrides (not tracked)
 for GENERIC_FILE in "${HOME}/.config/generic" "${HOME}/.config/generic.local"; do
+    # shellcheck source=/dev/null
     [[ -r "${GENERIC_FILE}" ]] && [[ -f "${GENERIC_FILE}" ]] && source "${GENERIC_FILE}"
 done
 unset GENERIC_FILE
 
 # Prompt
-export PS1="$NM[ $HI\u $HII${DOTFILES_PROMPT_HOST:-\\h} $SI\w$NM ] $IN" # hostname override via DOTFILES_PROMPT_HOST
+export PS1="${NM}[ ${HI}\u ${HII}${DOTFILES_PROMPT_HOST:-\\h} ${SI}\w${NM} ] ${IN}" # hostname override via DOTFILES_PROMPT_HOST
 
 export LC_ALL=en_GB.UTF-8

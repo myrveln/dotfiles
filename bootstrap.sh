@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "${BASH_SOURCE}")";
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1;
 
 git pull origin master --quiet
 
@@ -14,10 +14,11 @@ function Execute() {
 	  --exclude "brew.sh" \
 	  --exclude "macos.sh" \
       -avh . ~
+    # shellcheck source=/dev/null
     source ~/.bash_profile
 }
 
-if [ "$1" == "--force" -o "$1" == "-f" ]; then
+if [ "$1" == "--force" ] || [ "$1" == "-f" ]; then
     Execute
 else
     read -p "This will overwrite all dotfiles in your home directory ($(echo ${HOME})). Are you sure? (y/n) " -n 1
