@@ -47,3 +47,4 @@ brew "terraform-docs/tap/terraform-docs"
 
 # Casks
 cask "zen"
+cask "visual-studio-code"
