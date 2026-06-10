@@ -23,6 +23,7 @@ brew "grep"
 brew "openssh"
 brew "screen"
 brew "tree"
+brew "ripgrep"
 
 # Cloud/Kubernetes
 brew "awscli"
