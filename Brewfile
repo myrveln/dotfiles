@@ -24,6 +24,7 @@ brew "openssh"
 brew "screen"
 brew "tree"
 brew "ripgrep"
+brew "container"
 
 # Cloud/Kubernetes
 brew "awscli"
@@ -49,3 +50,4 @@ brew "terraform-docs/tap/terraform-docs"
 # Casks
 cask "zen"
 cask "visual-studio-code"
+cask "iterm2"

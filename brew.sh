@@ -54,6 +54,9 @@ brew upgrade
 # Save Homebrew’s installed location.
 BREW_PREFIX=$(brew --prefix)
 
+# Trust the taps we need (this must be done before bundle)
+export HOMEBREW_NO_REQUIRE_TAP_TRUST="1"
+
 # Install packages/casks/taps from Brewfile.
 brew bundle --file "${SCRIPT_DIR}/Brewfile"
 
