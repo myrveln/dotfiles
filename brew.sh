@@ -44,7 +44,12 @@ ensure_homebrew
 brew update
 
 # Display any warnings from `brew doctor` (skip non-prefixed coreutils check)
-brew doctor $(brew doctor --list-checks | grep -v "check_for_non_prefixed_coreutils" | tr '\n' ' ')
+doctor_checks=()
+while IFS= read -r check; do
+    [[ "${check}" == "check_for_non_prefixed_coreutils" ]] && continue
+    doctor_checks+=("${check}")
+done < <(brew doctor --list-checks)
+brew doctor "${doctor_checks[@]}"
 
 # Upgrade any already-installed formulae.
 brew upgrade --yes
