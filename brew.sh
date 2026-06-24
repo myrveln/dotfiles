@@ -43,13 +43,16 @@ ensure_homebrew
 # Make sure we’re using the latest Homebrew.
 brew update
 
-# Display any warnings from `brew doctor`
-if ! brew doctor; then
-    echo "'brew doctor' reported warnings; continuing with upgrades."
-fi
+# Display any warnings from `brew doctor` (skip non-prefixed coreutils check)
+doctor_checks=()
+while IFS= read -r check; do
+    [[ "${check}" == "check_for_non_prefixed_coreutils" ]] && continue
+    doctor_checks+=("${check}")
+done < <(brew doctor --list-checks)
+brew doctor "${doctor_checks[@]}"
 
 # Upgrade any already-installed formulae.
-brew upgrade
+brew upgrade --yes
 
 # Save Homebrew’s installed location.
 BREW_PREFIX=$(brew --prefix)
@@ -67,15 +70,20 @@ if ! fgrep -q "${BREW_PREFIX}/bin/bash" /etc/shells; then
 fi
 
 # Configure GnuPG pinentry (Brewfile installs gnupg + pinentry-mac).
-mkdir -p "${HOME}/.gnupg"
-chmod 700 "${HOME}/.gnupg" || true
+GPG_DIR="${HOME}/.gnupg"
+GPG_AGENT_CONF="${GPG_DIR}/gpg-agent.conf"
+PINENTRY_LINE="pinentry-program ${BREW_PREFIX}/bin/pinentry-mac"
 
-GPG_AGENT_CONF="${HOME}/.gnupg/gpg-agent.conf"
-touch "${GPG_AGENT_CONF}"
+# Only initialize if directory doesn't exist or config is incomplete
+if [[ ! -d "${GPG_DIR}" ]] || [[ ! -f "${GPG_AGENT_CONF}" ]] || ! grep -q "^${PINENTRY_LINE}$" "${GPG_AGENT_CONF}"; then
+    mkdir -p "${GPG_DIR}"
+    chmod 700 "${GPG_DIR}"
+    touch "${GPG_AGENT_CONF}"
 
-if ! grep -q "^pinentry-program ${BREW_PREFIX}/bin/pinentry-mac$" "${GPG_AGENT_CONF}"; then
-    echo "pinentry-program ${BREW_PREFIX}/bin/pinentry-mac" >> "${GPG_AGENT_CONF}"
-    killall gpg-agent 2>/dev/null || true
+    if ! grep -q "^${PINENTRY_LINE}$" "${GPG_AGENT_CONF}"; then
+        echo "${PINENTRY_LINE}" >> "${GPG_AGENT_CONF}"
+        killall gpg-agent 2>/dev/null || true
+    fi
 fi
 
 # Remove outdated versions from the cellar.
