@@ -4,9 +4,9 @@
 # -----------------------------------------------------------------------------
 # Theme and colors
 # -----------------------------------------------------------------------------
+background-blur = macos-glass-regular
+background-opacity = 0.642
 theme = Dracula
-background-opacity = 0.841
-background-blur = true
 
 # -----------------------------------------------------------------------------
 # Font
@@ -19,10 +19,19 @@ font-thicken-strength = 185
 # -----------------------------------------------------------------------------
 # Window and startup behavior
 # -----------------------------------------------------------------------------
-window-width = 130
+macos-titlebar-proxy-icon = hidden
+macos-titlebar-style = tabs
+split-inherit-working-directory = false
+tab-inherit-working-directory = false
+title = " "
 window-height = 40
-working-directory = home
 window-inherit-working-directory = false
+window-padding-balance = true
+window-padding-x = 6
+window-padding-y = 0,6
+window-save-state = always
+window-width = 130
+working-directory = home
 
 # -----------------------------------------------------------------------------
 # Scrollback
@@ -44,10 +53,11 @@ shell-integration-features = no-title,no-cursor,sudo,ssh-env,ssh-terminfo,path
 # -----------------------------------------------------------------------------
 # Interaction and UX
 # -----------------------------------------------------------------------------
+clipboard-write = allow
 confirm-close-surface = true
-mouse-reporting = true
-mouse-hide-while-typing = true
 copy-on-select = false
+mouse-hide-while-typing = true
+mouse-reporting = true
 
 # -----------------------------------------------------------------------------
 # Notifications and bell
