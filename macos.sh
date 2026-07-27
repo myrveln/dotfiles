@@ -291,7 +291,11 @@ defaults write com.apple.helpviewer DevMode -bool true
 
 # Reveal IP address, hostname, OS version, etc. when clicking the clock
 # in the login window
-sudo defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo HostName
+if [[ "${DRY_RUN}" == true ]]; then
+	dry_log "defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo HostName"
+else
+	command sudo /usr/bin/defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo HostName
+fi
 
 # Disable Notification Center and remove the menu bar icon
 launchctl unload -w /System/Library/LaunchAgents/com.apple.notificationcenterui.plist 2> /dev/null
@@ -395,10 +399,15 @@ sudo pmset -a hibernatemode 0
 defaults write com.apple.screensaver askForPassword -int 1
 defaults write com.apple.screensaver askForPasswordDelay -int 0
 
-# Save screenshots to the desktop
-defaults write com.apple.screencapture location -string "${HOME}/Desktop"
+# Save screenshots to the clipboard
+defaults write com.apple.screencapture target -string "clipboard"
 
-# Save screenshots in PNG format (other options: BMP, GIF, JPG, PDF, TIFF)
+# Save screenshots as a file:
+# defaults write com.apple.screencapture target -string "file"
+# Fallback if you switch screenshot target to file output:
+# defaults write com.apple.screencapture location -string "${HOME}/Desktop"
+
+# Keep PNG as the preferred format if screenshot target is changed back to file
 defaults write com.apple.screencapture type -string "png"
 
 # Disable shadow in screenshots
