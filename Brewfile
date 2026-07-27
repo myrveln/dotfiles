@@ -5,9 +5,9 @@ tap "hashicorp/tap"
 tap "terraform-docs/tap"
 
 # Shell + basics
-brew "coreutils"
 brew "bash"
 brew "bash-completion@2"
+brew "coreutils"
 
 # GPG
 brew "gnupg"
@@ -25,6 +25,7 @@ brew "screen"
 brew "tree"
 brew "ripgrep"
 brew "container"
+brew "fastfetch"
 
 # Cloud/Kubernetes
 brew "awscli"
@@ -51,3 +52,4 @@ brew "terraform-docs/tap/terraform-docs"
 cask "zen"
 cask "visual-studio-code"
 cask "iterm2"
+cask "ghostty"

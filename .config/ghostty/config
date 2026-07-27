@@ -1,0 +1,116 @@
+# Ghostty config
+# Docs (reference): https://ghostty.org/docs/config/reference
+
+# -----------------------------------------------------------------------------
+# Theme and colors
+# -----------------------------------------------------------------------------
+theme = Dracula
+background-opacity = 0.841
+background-blur = true
+
+# -----------------------------------------------------------------------------
+# Font
+# -----------------------------------------------------------------------------
+font-family = Monaco
+font-size = 12
+
+# -----------------------------------------------------------------------------
+# Window and startup behavior
+# -----------------------------------------------------------------------------
+window-width = 130
+window-height = 40
+working-directory = home
+
+# -----------------------------------------------------------------------------
+# Scrollback
+# -----------------------------------------------------------------------------
+scrollback-limit = 100000000
+
+# -----------------------------------------------------------------------------
+# Cursor
+# -----------------------------------------------------------------------------
+cursor-style = block
+cursor-style-blink = false
+
+# -----------------------------------------------------------------------------
+# Shell integration
+# -----------------------------------------------------------------------------
+shell-integration = detect
+shell-integration-features = no-title,no-cursor,ssh-env,ssh-terminfo,path
+
+# -----------------------------------------------------------------------------
+# Interaction and UX
+# -----------------------------------------------------------------------------
+confirm-close-surface = true
+mouse-reporting = true
+mouse-hide-while-typing = true
+copy-on-select = false
+
+# -----------------------------------------------------------------------------
+# Notifications and bell
+# -----------------------------------------------------------------------------
+bell-features = system,attention,title
+notify-on-command-finish = unfocused
+
+# -----------------------------------------------------------------------------
+# macOS-specific behavior
+# -----------------------------------------------------------------------------
+macos-option-as-alt = true
+
+# -----------------------------------------------------------------------------
+# Keybindings
+# Also see: ghostty +list-actions
+# -----------------------------------------------------------------------------
+
+# Tab navigation (Command + arrows)
+keybind = super+left=previous_tab
+keybind = super+right=next_tab
+
+# Control-number control characters
+keybind = ctrl+-=text:\x1f
+keybind = ctrl+2=text:\x00
+keybind = ctrl+3=text:\x1b
+keybind = ctrl+4=text:\x1c
+keybind = ctrl+5=text:\x1d
+keybind = ctrl+6=text:\x1e
+keybind = ctrl+7=text:\x1f
+keybind = ctrl+8=text:\x7f
+
+# Arrow key variants
+# Shift/Ctrl variants use CSI sequences; Alt variants send escaped text motions.
+keybind = shift+up=esc:[1;2A
+keybind = ctrl+up=esc:[1;5A
+keybind = ctrl+shift+up=esc:[1;6A
+keybind = alt+up=text:\x1b\x1b\x5b\x41
+keybind = shift+down=esc:[1;2B
+keybind = ctrl+down=esc:[1;5B
+keybind = ctrl+shift+down=esc:[1;6B
+keybind = alt+down=text:\x1b\x1b\x5b\x42
+keybind = shift+left=esc:[1;2D
+keybind = ctrl+left=esc:[1;5D
+keybind = ctrl+shift+left=esc:[1;6D
+keybind = alt+left=esc:b
+keybind = shift+right=esc:[1;2C
+keybind = ctrl+right=esc:[1;5C
+keybind = ctrl+shift+right=esc:[1;6C
+keybind = alt+right=esc:f
+
+# Shift + function keys
+keybind = shift+f1=esc:[1;2P
+keybind = shift+f2=esc:[1;2Q
+keybind = shift+f3=esc:[1;2R
+keybind = shift+f4=esc:[1;2S
+keybind = shift+f5=esc:[15;2~
+keybind = shift+f6=esc:[17;2~
+keybind = shift+f7=esc:[18;2~
+keybind = shift+f8=esc:[19;2~
+keybind = shift+f9=esc:[20;2~
+keybind = shift+f10=esc:[21;2~
+keybind = shift+f11=esc:[23;2~
+keybind = shift+f12=esc:[24;2~
+
+# Home/End variants
+keybind = shift+home=esc:[1;2H
+keybind = ctrl+home=esc:[1;5H
+keybind = shift+end=esc:[1;2F
+keybind = ctrl+end=esc:[1;5F
