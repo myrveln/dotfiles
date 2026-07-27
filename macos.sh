@@ -1,24 +1,253 @@
 #!/usr/bin/env bash
 
+DRY_RUN=false
+DRY_RUN_CHANGES=0
+DRY_RUN_DIFFS=()
+
+for arg in "$@"; do
+	case "${arg}" in
+		--dry-run|-n)
+			DRY_RUN=true
+			;;
+	esac
+done
+
+dry_log() {
+	if [[ "${DRY_RUN}" == true ]]; then
+		echo "[dry-run] $*"
+	fi
+}
+
+normalize_bool() {
+	case "${1,,}" in
+		1|true|yes) echo "1" ;;
+		0|false|no) echo "0" ;;
+		*) echo "$1" ;;
+	esac
+}
+
+print_dry_change() {
+	local scope="$1"
+	local domain="$2"
+	local key="$3"
+	local from="$4"
+	local to="$5"
+	DRY_RUN_CHANGES=$((DRY_RUN_CHANGES + 1))
+	DRY_RUN_DIFFS+=("[dry-run] ${scope} ${domain} ${key}: ${from} -> ${to}")
+}
+
+run_mutation() {
+	if [[ "${DRY_RUN}" == true ]]; then
+		dry_log "$*"
+		return 0
+	fi
+
+	"$@"
+}
+
+get_pmset_value() {
+	local profile_label="$1"
+	local key="$2"
+
+	pmset -g custom | awk -v section="${profile_label}" -v wanted="${key}" '
+		$0 == section { in_section=1; next }
+		in_section && /^[A-Za-z].*:/ { in_section=0 }
+		in_section && $1 == wanted { print $2; exit }
+	'
+}
+
+dry_run_pmset() {
+	local profile="$1"
+	shift
+
+	local -a labels=()
+	case "${profile}" in
+		-b) labels=("Battery Power:") ;;
+		-c) labels=("AC Power:") ;;
+		-a) labels=("Battery Power:" "AC Power:") ;;
+		*)
+			dry_log "sudo pmset ${profile} $*"
+			return 0
+			;;
+	esac
+
+	while [[ $# -ge 2 ]]; do
+		local key="$1"
+		local target="$2"
+		shift 2
+
+		for label in "${labels[@]}"; do
+			local current
+			current="$(get_pmset_value "${label}" "${key}")"
+			if [[ -z "${current}" ]]; then
+				dry_log "pmset ${label%:} ${key}: unable to compare (not reported by pmset -g custom)"
+				continue
+			fi
+
+			if [[ "${current}" != "${target}" ]]; then
+				print_dry_change "pmset ${label%:}" "" "${key}" "${current}" "${target}"
+			fi
+		done
+	done
+}
+
+dry_run_defaults_write() {
+	local original_args=("$@")
+	local current_host=false
+	if [[ "$1" == "-currentHost" ]]; then
+		current_host=true
+		shift
+	fi
+
+	if [[ "$1" != "write" ]]; then
+		dry_log "defaults ${original_args[*]}"
+		return 0
+	fi
+
+	local domain="$2"
+	local key="$3"
+	local type="${4:-}"
+	local value="${5:-}"
+	local current_read
+	local scope_label="defaults"
+
+	if [[ "${current_host}" == true ]]; then
+		scope_label="defaults -currentHost"
+		current_read="$(command defaults -currentHost read "${domain}" "${key}" 2>/dev/null || true)"
+	else
+		current_read="$(command defaults read "${domain}" "${key}" 2>/dev/null || true)"
+	fi
+
+	if [[ -z "${current_read}" ]]; then
+		current_read="<unset>"
+	fi
+
+	case "${type}" in
+		-bool)
+			local current_norm target_norm
+			current_norm="$(normalize_bool "${current_read}")"
+			target_norm="$(normalize_bool "${value}")"
+			if [[ "${current_norm}" != "${target_norm}" ]]; then
+				print_dry_change "${scope_label}" "${domain}" "${key}" "${current_read}" "${target_norm}"
+			fi
+			;;
+		-int|-string)
+			if [[ "${key}" == "AppleLanguages" ]]; then
+				local current_compact value_compact
+				current_compact="$(echo "${current_read}" | tr -d '[:space:]"')"
+				value_compact="$(echo "${value}" | tr -d '[:space:]"')"
+				if [[ "${current_compact}" != "${value_compact}" ]]; then
+					print_dry_change "${scope_label}" "${domain}" "${key}" "${current_read}" "${value}"
+				fi
+			elif [[ "${current_read}" != "${value}" ]]; then
+				print_dry_change "${scope_label}" "${domain}" "${key}" "${current_read}" "${value}"
+			fi
+			;;
+		-float)
+			if [[ "${current_read}" != "${value}" ]]; then
+				print_dry_change "${scope_label}" "${domain}" "${key}" "${current_read}" "${value}"
+			fi
+			;;
+		*)
+			dry_log "defaults ${original_args[*]}"
+			;;
+	esac
+}
+
+defaults() {
+	if [[ "${DRY_RUN}" == true ]]; then
+		dry_run_defaults_write "$@"
+		return 0
+	fi
+
+	command defaults "$@"
+}
+
+sudo() {
+	if [[ "${DRY_RUN}" != true ]]; then
+		command sudo "$@"
+		return $?
+	fi
+
+	if [[ "$1" == "-v" ]]; then
+		return 0
+	fi
+
+	if [[ "$1" == "-n" && "$2" == "true" ]]; then
+		return 0
+	fi
+
+	case "$1" in
+		pmset)
+			shift
+			dry_run_pmset "$@"
+			;;
+		defaults)
+			shift
+			defaults "$@"
+			;;
+		systemsetup)
+			if [[ "$2" == "-settimezone" ]]; then
+				local target_timezone="$3"
+				local current_timezone
+				current_timezone="$(readlink /etc/localtime 2>/dev/null | sed -E 's#^.*/zoneinfo/##')"
+				if [[ -z "${current_timezone}" ]]; then
+					current_timezone="$(systemsetup -gettimezone 2>/dev/null | sed -E 's/^Time Zone: //')"
+				fi
+				if [[ -z "${current_timezone}" ]]; then
+					current_timezone="<unknown>"
+				fi
+				if [[ "${current_timezone}" != "${target_timezone}" ]]; then
+					print_dry_change "systemsetup" "" "timezone" "${current_timezone}" "${target_timezone}"
+				fi
+			else
+				dry_log "sudo $*"
+			fi
+			;;
+		*)
+			dry_log "sudo $*"
+			;;
+	esac
+}
+
+launchctl() {
+	if [[ "${DRY_RUN}" == true ]]; then
+		dry_log "launchctl $*"
+		return 0
+	fi
+
+	command launchctl "$@"
+}
+
+killall() {
+	if [[ "${DRY_RUN}" == true ]]; then
+		return 0
+	fi
+
+	command killall "$@"
+}
+
 # Close any open System Preferences panes, to prevent them from overriding
 # settings we’re about to change
-osascript -e 'tell application "System Preferences" to quit'
+if [[ "${DRY_RUN}" != true ]]; then
+	osascript -e 'tell application "System Preferences" to quit'
+fi
 
 # Ask for the administrator password upfront
-sudo -v
+if [[ "${DRY_RUN}" != true ]]; then
+	sudo -v
+fi
 
-# Keep-alive: update existing `sudo` time stamp until `.macos` has finished
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+# Keep-alive: update existing `sudo` time stamp until `macos.sh` has finished
+if [[ "${DRY_RUN}" != true ]]; then
+	while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+else
+	echo "[dry-run] evaluating settings and printing detected changes + always-run actions"
+fi
 
 ###############################################################################
 # General UI/UX                                                               #
 ###############################################################################
-
-# Set computer name (as done via System Preferences → Sharing)
-#sudo scutil --set ComputerName "0x6D746873"
-#sudo scutil --set HostName "0x6D746873"
-#sudo scutil --set LocalHostName "0x6D746873"
-#sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.smb.server NetBIOSName -string "0x6D746873"
 
 # Disable the sound effects on boot
 sudo nvram SystemAudioVolume=" "
@@ -45,7 +274,7 @@ defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 # Remove duplicates in the “Open With” menu (also see `lscleanup` alias)
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user
+run_mutation /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -r -domain local -domain system -domain user
 
 # Display ASCII control characters using caret notation in standard text views
 # Try e.g. `cd /tmp; unidecode "\x{0000}" > cc.txt; open -e cc.txt`
@@ -129,7 +358,9 @@ defaults write NSGlobalDomain AppleMeasurementUnits -string "Centimeters"
 defaults write NSGlobalDomain AppleMetricUnits -bool true
 
 # Set the timezone; see `sudo systemsetup -listtimezones` for other values
-sudo systemsetup -settimezone "Europe/Stockholm" > /dev/null
+if ! sudo systemsetup -settimezone "Europe/Stockholm" > /dev/null 2>&1; then
+	echo "Warning: Could not set timezone to Europe/Stockholm."
+fi
 
 ###############################################################################
 # Energy saving                                                               #
@@ -138,20 +369,17 @@ sudo systemsetup -settimezone "Europe/Stockholm" > /dev/null
 # Enable lid wakeup
 sudo pmset -a lidwake 1
 
-# Sleep the display after 30 minutes
-sudo pmset -a displaysleep 30
-
-# Disable machine sleep while charging
-sudo pmset -c sleep 0
-
-# Set machine sleep to 5 minutes on battery
-sudo pmset -b sleep 5
+# Configure sleep/display together to avoid transient invalid combinations.
+# (macOS may warn if display sleep is not lower than system sleep while values
+# are being updated one-by-one.)
+sudo pmset -c sleep 0 displaysleep 30
+sudo pmset -b sleep 30 displaysleep 5
 
 # Set standby delay to 24 hours (default is 1 hour)
 sudo pmset -a standbydelay 86400
 
-# Never go into computer sleep mode
-sudo systemsetup -setcomputersleep Off > /dev/null
+# Keep sleep behavior managed via pmset to avoid conflicting settings.
+# (Do not also force computer sleep Off via systemsetup.)
 
 # Hibernation mode
 # 0: Disable hibernation (speeds up entering sleep mode)
@@ -240,22 +468,22 @@ defaults write com.apple.frameworks.diskimages auto-open-rw-root -bool true
 defaults write com.apple.finder OpenWindowForNewRemovableDisk -bool true
 
 # Show item info near icons on the desktop and in other icon views
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:showItemInfo true" ~/Library/Preferences/com.apple.finder.plist
 
 # Show item info to the right of the icons on the desktop
-/usr/libexec/PlistBuddy -c "Set DesktopViewSettings:IconViewSettings:labelOnBottom false" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set DesktopViewSettings:IconViewSettings:labelOnBottom false" ~/Library/Preferences/com.apple.finder.plist
 
 # Enable snap-to-grid for icons on the desktop and in other icon views
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:arrangeBy grid" ~/Library/Preferences/com.apple.finder.plist
 
 # Increase grid spacing for icons on the desktop and in other icon views
-/usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
-/usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :FK_StandardViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
+run_mutation /usr/libexec/PlistBuddy -c "Set :StandardViewSettings:IconViewSettings:gridSpacing 100" ~/Library/Preferences/com.apple.finder.plist
 
 # Increase the size of icons on the desktop and in other icon views
 # /usr/libexec/PlistBuddy -c "Set :DesktopViewSettings:IconViewSettings:iconSize 80" ~/Library/Preferences/com.apple.finder.plist
@@ -304,12 +532,6 @@ defaults write com.apple.dock show-process-indicators -bool true
 # Don’t animate opening applications from the Dock
 defaults write com.apple.dock launchanim -bool false
 
-# Disable Dashboard
-defaults write com.apple.dashboard mcx-disabled -bool true
-
-# Don’t show Dashboard as a Space
-defaults write com.apple.dock dashboard-in-overlay -bool true
-
 # Don’t automatically rearrange Spaces based on most recent use
 defaults write com.apple.dock mru-spaces -bool false
 
@@ -342,7 +564,7 @@ defaults write com.apple.dock wvous-tr-modifier -int 0
 defaults write com.apple.dock wvous-bl-corner -int 13
 defaults write com.apple.dock wvous-bl-modifier -int 0
 
-# Bottom right screen corner → Nono-op
+# Bottom right screen corner → no-op
 defaults write com.apple.dock wvous-br-corner -int 0
 defaults write com.apple.dock wvous-br-modifier -int 0
 
@@ -415,7 +637,6 @@ defaults write com.google.Chrome NSWindowRestoresWorkspaceAtLaunch -bool YES
 ###############################################################################
 
 for app in "Activity Monitor" \
-	"Address Book" \
 	"Calendar" \
 	"cfprefsd" \
 	"Contacts" \
@@ -425,8 +646,20 @@ for app in "Activity Monitor" \
 	"Messages" \
 	"Photos" \
 	"Safari" \
-	"SystemUIServer" \
-	"iCal"; do
+	"SystemUIServer"; do
 	killall "${app}" &> /dev/null
 done
-echo "Done. Note that some of these changes require a logout/restart to take effect."
+
+if [[ "${DRY_RUN}" == true ]]; then
+	for line in "${DRY_RUN_DIFFS[@]}"; do
+		echo "${line}"
+	done
+
+	if [[ "${DRY_RUN_CHANGES}" -eq 0 ]]; then
+		echo "Dry-run complete. No setting changes detected."
+	else
+		echo "Dry-run complete. ${DRY_RUN_CHANGES} setting change(s) would be applied."
+	fi
+else
+	echo "Done. Note that some of these changes require a logout/restart to take effect."
+fi
