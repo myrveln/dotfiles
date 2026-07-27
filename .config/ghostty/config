@@ -13,6 +13,8 @@ background-blur = true
 # -----------------------------------------------------------------------------
 font-family = Monaco
 font-size = 12
+font-thicken = true
+font-thicken-strength = 185
 
 # -----------------------------------------------------------------------------
 # Window and startup behavior
