@@ -1,0 +1,55 @@
+{
+    "update.showReleaseNotes": false,
+    "terminal.integrated.scrollback": 4000,
+    "terminal.integrated.fontFamily": "Monaco",
+    "terminal.integrated.fontSize": 12,
+    "terminal.integrated.cursorStyle": "block",
+    "terminal.integrated.cursorBlinking": false,
+    "workbench.settings.applyToAllProfiles": [
+        "terminal.integrated.scrollback",
+        "terminal.integrated.shellIntegration.history",
+        "files.trimTrailingWhitespace"
+    ],
+    "terminal.integrated.shellIntegration.history": 0,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "redhat.telemetry.enabled": false,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "docker.extension.dockerEngineAvailabilityPrompt": false,
+    "workbench.colorTheme": "Minimal Kiwi",
+    "chat.viewSessions.orientation": "stacked",
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
+    "chat.tools.urls.autoApprove": {
+        "https://code.visualstudio.com": true,
+        "https://github.com/microsoft/vscode/wiki/*": true,
+        "https://api.immich.app": {
+            "approveRequest": true,
+            "approveResponse": false
+        }
+    },
+    "python.createEnvironment.trigger": "off",
+    "workbench.colorCustomizations": {
+        "terminal.background": "#282A36",
+        "terminal.foreground": "#F8F8F2",
+        "terminalCursor.background": "#F8F8F2",
+        "terminalCursor.foreground": "#F8F8F2",
+        "terminal.selectionBackground": "#44475A80",
+        "terminal.ansiBlack": "#21222C",
+        "terminal.ansiRed": "#FF5555",
+        "terminal.ansiGreen": "#50FA7B",
+        "terminal.ansiYellow": "#F1FA8C",
+        "terminal.ansiBlue": "#BD93F9",
+        "terminal.ansiMagenta": "#FF79C6",
+        "terminal.ansiCyan": "#8BE9FD",
+        "terminal.ansiWhite": "#F8F8F2",
+        "terminal.ansiBrightBlack": "#6272A4",
+        "terminal.ansiBrightRed": "#FF6E6E",
+        "terminal.ansiBrightGreen": "#69FF94",
+        "terminal.ansiBrightYellow": "#FFFFA5",
+        "terminal.ansiBrightBlue": "#D6ACFF",
+        "terminal.ansiBrightMagenta": "#FF92DF",
+        "terminal.ansiBrightCyan": "#A4FFFF",
+        "terminal.ansiBrightWhite": "#FFFFFF"
+    }
+}

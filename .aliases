@@ -19,6 +19,7 @@ alias c="clear"
 alias ssh="ssh -X"
 alias ..="cd .."
 alias cg="cd ~/git"
+alias ff="fastfetch -l macOS"
 
 # Get week number
 alias week='date +%V'
