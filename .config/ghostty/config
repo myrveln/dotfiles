@@ -20,6 +20,7 @@ font-size = 12
 window-width = 130
 window-height = 40
 working-directory = home
+window-inherit-working-directory = false
 
 # -----------------------------------------------------------------------------
 # Scrollback
@@ -36,7 +37,7 @@ cursor-style-blink = false
 # Shell integration
 # -----------------------------------------------------------------------------
 shell-integration = detect
-shell-integration-features = no-title,no-cursor,ssh-env,ssh-terminfo,path
+shell-integration-features = no-title,no-cursor,sudo,ssh-env,ssh-terminfo,path
 
 # -----------------------------------------------------------------------------
 # Interaction and UX

@@ -34,8 +34,14 @@ unset FILE
 # Bash completion on macOS
 [[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
 
-# Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
-[ -e "${HOME}/.ssh/config" ] && complete -o "default" -o "nospace" -W "$(grep "^host" ~/.ssh/config | grep -v "[?*]" | cut -d " " -f2- | tr ' ' '\n')" scp sftp ssh;
+# Add tab completion for SSH hostnames based on tracked and local SSH config, ignoring wildcards
+SSH_COMPLETION_FILES=()
+[[ -r "${HOME}/.ssh/config" ]] && SSH_COMPLETION_FILES+=("${HOME}/.ssh/config")
+[[ -r "${HOME}/.config/ssh.local" ]] && SSH_COMPLETION_FILES+=("${HOME}/.config/ssh.local")
+if [[ ${#SSH_COMPLETION_FILES[@]} -gt 0 ]]; then
+    complete -o "default" -o "nospace" -W "$(grep -h "^host" "${SSH_COMPLETION_FILES[@]}" | grep -v "[?*]" | cut -d " " -f2- | tr ' ' '\n')" scp sftp ssh;
+fi
+unset SSH_COMPLETION_FILES
 
 # Bash and shell programs
 # Skip history spam

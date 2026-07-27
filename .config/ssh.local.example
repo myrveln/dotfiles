@@ -1,0 +1,4 @@
+# Copy this file to ~/.config/ssh.local and add your personal Host blocks there.
+#
+# The tracked ~/.ssh/config file in this repo includes ~/.config/ssh.local so the
+# private host definitions stay outside version control.
