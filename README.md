@@ -86,7 +86,7 @@ This repository is public, so personal/work-specific settings should live in loc
 - OpenShift endpoints: copy `.config/clusters.local.example` to `~/.config/clusters.local`
 - Generic local settings (including a stable prompt hostname): copy `.config/generic.local.example` to `~/.config/generic.local`
 - Personal SSH hosts: copy `.config/ssh.local.example` to `~/.config/ssh.local`
-- AWS Session Manager SSH helper: `./bootstrap.sh` will prompt on first install and will keep the helper up to date on later runs if it already exists
+- AWS Session Manager SSH helper ([qoomon/aws-ssm-ssh-proxy-command](https://github.com/qoomon/aws-ssm-ssh-proxy-command)): `./bootstrap.sh` will prompt on first install and will keep the helper up to date on later runs if it already exists
 
 ## License
 This repository is open-source. Feel free to use and modify it as needed.
