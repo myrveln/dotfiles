@@ -17,6 +17,7 @@ alias l='ls ${colorflag} -lAhF'
 
 alias c="clear"
 alias ssh="ssh -X"
+alias sshc="TERM=xterm-256color ssh -X"
 alias ..="cd .."
 alias cg="cd ~/git"
 alias ff="fastfetch -l macOS"

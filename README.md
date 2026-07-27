@@ -12,9 +12,8 @@ git clone https://github.com/myrveln/dotfiles.git ~/dotfiles
 ```
 
 ### Run Bootstrap Script
-The `bootstrap.sh` script will install all the dotfiles in your home directory automatically. Run the following command:
+The `bootstrap.sh` script syncs tracked dotfiles to your home directory and runs bootstrap hooks from `scripts/bootstrap/` (for example, VS Code setup and AWS helper checks). Run the following command:
 ```bash
-cd ~/dotfiles
 ./bootstrap.sh
 ```
 
@@ -86,6 +85,8 @@ This repository is public, so personal/work-specific settings should live in loc
 - Git identity + optional GPG setup: copy `.config/gitconfig.local.example` to `~/.config/gitconfig.local`
 - OpenShift endpoints: copy `.config/clusters.local.example` to `~/.config/clusters.local`
 - Generic local settings (including a stable prompt hostname): copy `.config/generic.local.example` to `~/.config/generic.local`
+- Personal SSH hosts: copy `.config/ssh.local.example` to `~/.config/ssh.local`
+- AWS Session Manager SSH helper: `./bootstrap.sh` will prompt on first install and will keep the helper up to date on later runs if it already exists
 
 ## License
 This repository is open-source. Feel free to use and modify it as needed.
