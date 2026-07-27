@@ -20,14 +20,6 @@
     "chat.viewSessions.orientation": "stacked",
     "gitlens.ai.model": "vscode",
     "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
-    "chat.tools.urls.autoApprove": {
-        "https://code.visualstudio.com": true,
-        "https://github.com/microsoft/vscode/wiki/*": true,
-        "https://api.immich.app": {
-            "approveRequest": true,
-            "approveResponse": false
-        }
-    },
     "python.createEnvironment.trigger": "off",
     "workbench.colorCustomizations": {
         "terminal.background": "#282A36",
