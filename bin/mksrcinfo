@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Generate .SRCINFO from a PKGBUILD using an Arch Linux container.
+# Usage: mksrcinfo [-u]
+#   -u  refresh sha256sums in PKGBUILD via updpkgsums before generating .SRCINFO
+
+set -euo pipefail
+
+update_sums=0
+[[ "${1:-}" == "-u" ]] && update_sums=1
+
+[[ -f PKGBUILD ]] || { echo "error: no PKGBUILD found in $(pwd)" >&2; exit 1; }
+
+docker_platform=()
+if [[ "$(uname -s)" == "Darwin" && ( "$(uname -m)" == "arm64" || "$(uname -m)" == "aarch64" ) ]]; then
+	docker_platform=(--platform linux/amd64)
+fi
+
+host_uid="$(id -u)"
+host_gid="$(id -g)"
+
+setup="groupadd -o -g ${host_gid} builder 2>/dev/null || true; \
+	useradd -o -M -d /tmp -u ${host_uid} -g ${host_gid} builder 2>/dev/null || true"
+
+if (( update_sums )); then
+	docker run --rm "${docker_platform[@]}" \
+		-v "$(pwd):/pkg" \
+		archlinux bash -c "sed -i '/^DownloadUser/d' /etc/pacman.conf; ${setup}; pacman -Sy --noconfirm pacman-contrib > /dev/null || { echo 'error: failed to install pacman-contrib' >&2; exit 1; }; su builder -c 'cd /pkg && /usr/bin/updpkgsums && makepkg --printsrcinfo > .SRCINFO'"
+else
+	docker run --rm "${docker_platform[@]}" \
+		-v "$(pwd):/pkg" \
+		archlinux bash -c "sed -i '/^DownloadUser/d' /etc/pacman.conf; ${setup}; su builder -c 'cd /pkg && makepkg --printsrcinfo'" > .SRCINFO
+fi
