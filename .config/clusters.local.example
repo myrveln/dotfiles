@@ -3,21 +3,35 @@
 # Copy this file to ~/.config/clusters.local and fill in your endpoints.
 # This file is intentionally git-ignored by this repo.
 
-# --- EKS settings (required for `cl eks-*`) ---
+# --- EKS settings (required for `cl login eks`) ---
 #
-# `cl eks-<env>` is configured in exactly one way:
+# Profile and cluster names are resolved using both environment and account type.
 #
-# 1) AWS profile for `assume` is derived as:
-#      ${CL_AWS_PROFILE_PREFIX}${CL_AWS_PROFILE_SEPARATOR}${env}
-#    where CL_AWS_PROFILE_SEPARATOR defaults to "-".
+# Account types available for selection.
+# Example: typea typeb
+# export CL_AWS_ACCOUNT_TYPES="typea typeb"
 #
-# 2) EKS cluster name is derived from a template containing `{env}`:
-#      ${CL_EKS_CLUSTER_NAME_TEMPLATE}  (with {env} replaced)
+# Default account type when no token is provided.
+# export CL_AWS_ACCOUNT_TYPE_DEFAULT="typea"
 #
-# Examples:
-# export CL_AWS_PROFILE_PREFIX="<your-sso-prefix>-"
+# Optional account type aliases used in commands:
+#   cl login eks qa ta
+#   cl login eks qa tb
+# Format: "type:alias type:alias"
+# export CL_AWS_ACCOUNT_TYPE_ALIASES="typea:ta typeb:tb"
+#
+# Prefix and separator for profile naming.
+# Profile is derived as:
+#   ${CL_AWS_PROFILE_PREFIX}${CL_AWS_PROFILE_SEPARATOR}${env}${CL_AWS_PROFILE_SEPARATOR}${account_type}
+# export CL_AWS_PROFILE_PREFIX="acct"
 # export CL_AWS_PROFILE_SEPARATOR="-"
-# export CL_EKS_CLUSTER_NAME_TEMPLATE="<prefix-name>-{env}-<suffix-name>"
+#
+# EKS cluster template must contain both {env} and {type}.
+# Example result: acct-eun1-qa-typea-eks
+# export CL_EKS_CLUSTER_NAME_TEMPLATE="acct-eun1-{env}-{type}-eks"
+#
+# Optional environment alias mapping when command env differs from profile token.
+# export CL_AWS_ENV_ALIAS_DEVTEST="devtest"
 
 # Optional: region used for `aws eks update-kubeconfig`
 # export CL_EKS_REGION="eu-north-1"

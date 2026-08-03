@@ -37,6 +37,7 @@ brew "tfsec"
 brew "eksctl"
 brew "helm"
 brew "k9s"
+brew "kubectx"
 brew "kubernetes-cli"      # kubectl
 brew "openshift-cli"       # oc
 

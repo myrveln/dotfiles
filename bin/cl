@@ -23,26 +23,34 @@ die() {
 usage() {
     cat <<'EOF'
 Usage:
-    cl-new eks-<env> [-n <namespace>] [--k9s]
-    cl-new ocp-<env> [-n <namespace>] [--k9s]
+    cl login eks <env> [account-type-token] [-n <namespace>] [--k9s]
+    cl login ocp <env> [-n <namespace>] [--k9s]
+    cl doctor
+    cl config show <env> [account-type-token]
 
 Examples:
-    cl-new eks-test
-    cl-new eks-test -n foo
-    cl-new eks-test --k9s
-    cl-new ocp-test
-    cl-new ocp-test -n bar --k9s
+    cl login eks qa
+    cl login eks qa ta
+    cl login eks devtest tb
+    cl login ocp qa -n foo --k9s
+    cl doctor
+    cl config show qa
+    cl config show qa tb
 
 Config:
     ~/.config/clusters.local
 
 Required EKS config:
     CL_AWS_PROFILE_PREFIX
-    CL_EKS_CLUSTER_NAME_TEMPLATE   (must contain {env})
+    CL_AWS_ACCOUNT_TYPES
+    CL_EKS_CLUSTER_NAME_TEMPLATE   (must contain {env} and {type})
 
 Optional EKS config:
     CL_AWS_PROFILE_SEPARATOR       (default: -)
     CL_EKS_REGION                  (default: eu-north-1)
+    CL_AWS_ACCOUNT_TYPE_DEFAULT
+    CL_AWS_ACCOUNT_TYPE_ALIASES    (format: type:alias type:alias)
+    CL_ASSUME_REQUIRED             (default: 1; set to 0 to skip assume)
 
 Optional OpenShift config:
     CL_OCP_SERVER
@@ -50,12 +58,341 @@ Optional OpenShift config:
 EOF
 }
 
+usage_login() {
+    cat <<'EOF'
+Usage:
+    cl login eks <env> [account-type-token] [-n <namespace>] [--k9s]
+    cl login ocp <env> [-n <namespace>] [--k9s]
+
+Examples:
+    cl login eks qa
+    cl login eks qa ta
+    cl login ocp prod -n payments --k9s
+EOF
+}
+
+usage_config() {
+    cat <<'EOF'
+Usage:
+    cl config show <env> [account-type-token]
+
+Example:
+    cl config show qa
+    cl config show qa tb
+EOF
+}
+
+doctor_command() {
+    local failures=0
+    local warnings=0
+    local default_account_type=""
+    local alias_check_output=""
+    local alias_check_status=0
+
+    doctor_ok() {
+        echo "cl: doctor: OK: $1"
+    }
+
+    doctor_warn() {
+        echo "cl: doctor: WARN: $1"
+        warnings=$((warnings + 1))
+    }
+
+    doctor_fail() {
+        echo "cl: doctor: FAIL: $1"
+        failures=$((failures + 1))
+    }
+
+    doctor_require_command() {
+        local cmd="$1"
+
+        if has_command "${cmd}"; then
+            doctor_ok "command '${cmd}' is available"
+        else
+            doctor_fail "missing required command '${cmd}'"
+        fi
+    }
+
+    doctor_optional_command() {
+        local cmd="$1"
+        local note="$2"
+
+        if has_command "${cmd}"; then
+            doctor_ok "optional command '${cmd}' is available"
+        else
+            doctor_warn "optional command '${cmd}' is not available (${note})"
+        fi
+    }
+
+    doctor_require_var() {
+        local var_name="$1"
+
+        if [[ -n "${!var_name:-}" ]]; then
+            doctor_ok "${var_name} is set"
+        else
+            doctor_fail "${var_name} is not set"
+        fi
+    }
+
+    echo "cl: doctor"
+    echo "cl: config file -> ${CONFIG_FILE}"
+
+    if [[ -r "${CONFIG_FILE}" ]] && [[ -f "${CONFIG_FILE}" ]]; then
+        doctor_ok "config file exists and is readable"
+    else
+        doctor_fail "config file is missing or unreadable"
+    fi
+
+    doctor_require_command "kubectl"
+    doctor_require_command "aws"
+    doctor_optional_command "kubectx" "falling back to 'kubectl config use-context'"
+    doctor_optional_command "kubens" "falling back to 'kubectl config set-context --namespace'"
+    doctor_optional_command "k9s" "--k9s will fail if requested"
+    doctor_optional_command "oc" "required only for OpenShift login"
+
+    if assume_is_required; then
+        if has_assume; then
+            doctor_ok "assume is available (required mode)"
+        else
+            doctor_fail "assume is required but not available"
+        fi
+    else
+        if has_assume; then
+            doctor_ok "assume is available (optional mode)"
+        else
+            doctor_warn "assume is not available but CL_ASSUME_REQUIRED allows fallback"
+        fi
+    fi
+
+    doctor_require_var "CL_AWS_PROFILE_PREFIX"
+    doctor_require_var "CL_AWS_ACCOUNT_TYPES"
+    doctor_require_var "CL_EKS_CLUSTER_NAME_TEMPLATE"
+
+    if [[ -n "${CL_EKS_CLUSTER_NAME_TEMPLATE:-}" ]]; then
+        if [[ "${CL_EKS_CLUSTER_NAME_TEMPLATE}" == *"{env}"* ]]; then
+            doctor_ok "CL_EKS_CLUSTER_NAME_TEMPLATE contains {env}"
+        else
+            doctor_fail "CL_EKS_CLUSTER_NAME_TEMPLATE must contain {env}"
+        fi
+
+        if [[ "${CL_EKS_CLUSTER_NAME_TEMPLATE}" == *"{type}"* ]]; then
+            doctor_ok "CL_EKS_CLUSTER_NAME_TEMPLATE contains {type}"
+        else
+            doctor_fail "CL_EKS_CLUSTER_NAME_TEMPLATE must contain {type}"
+        fi
+    fi
+
+    alias_check_output="$(validate_account_type_aliases 2>&1)"
+    alias_check_status=$?
+    if [[ ${alias_check_status} -eq 0 ]]; then
+        doctor_ok "account type aliases are valid"
+    else
+        doctor_fail "account type alias validation failed: ${alias_check_output}"
+    fi
+
+    default_account_type="$(resolve_account_type "" "" 2>&1)"
+    if [[ $? -eq 0 ]]; then
+        doctor_ok "default account type resolves to '${default_account_type}'"
+    else
+        doctor_fail "default account type resolution failed: ${default_account_type}"
+    fi
+
+    if [[ ${failures} -gt 0 ]]; then
+        echo "cl: doctor summary -> FAIL (${failures} failures, ${warnings} warnings)"
+        return 1
+    fi
+
+    echo "cl: doctor summary -> OK (0 failures, ${warnings} warnings)"
+}
+
+config_show_command() {
+    local env="$1"
+    local account_type_token="${2:-}"
+    local resolved_account_type=""
+    local profile=""
+    local cluster_name=""
+    local env_token=""
+    local region="${CL_EKS_REGION:-eu-north-1}"
+
+    resolved_account_type="$(resolve_account_type "${account_type_token}" "")" || return $?
+    env_token="$(resolve_env_token "${env}")" || return $?
+    profile="$(aws_profile_for_env "${env}" "${resolved_account_type}")" || return $?
+    cluster_name="$(eks_cluster_name_for_env "${env}" "${resolved_account_type}")" || return $?
+
+    echo "cl: config show"
+    echo "cl: config file -> ${CONFIG_FILE}"
+    echo "cl: env -> ${env}"
+    echo "cl: env token -> ${env_token}"
+    echo "cl: account type -> ${resolved_account_type}"
+    echo "cl: profile -> ${profile}"
+    echo "cl: cluster -> ${cluster_name}"
+    echo "cl: region -> ${region}"
+}
+
 require_command() {
     has_command "$1" || die "$1 not found"
 }
 
+log_warn() {
+    echo "cl: WARNING: $*" >&2
+}
+
 env_suffix() {
     printf '%s' "$1" | tr '[:lower:]-' '[:upper:]_'
+}
+
+to_lower() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+contains_token() {
+    local needle="$1"
+    shift
+    local item=""
+
+    for item in "$@"; do
+        [[ "${item}" == "${needle}" ]] && return 0
+    done
+
+    return 1
+}
+
+account_types() {
+    local types_raw="${CL_AWS_ACCOUNT_TYPES:-}"
+    local item=""
+    local normalized=()
+
+    [[ -n "${types_raw}" ]] || {
+        echo "missing CL_AWS_ACCOUNT_TYPES in ${CONFIG_FILE}" >&2
+        return 1
+    }
+    read -r -a normalized <<< "${types_raw}"
+    [[ ${#normalized[@]} -gt 0 ]] || {
+        echo "CL_AWS_ACCOUNT_TYPES is empty" >&2
+        return 1
+    }
+
+    for item in "${normalized[@]}"; do
+        printf '%s\n' "$(to_lower "${item}")"
+    done
+}
+
+account_type_alias_entries() {
+    local explicit_aliases="${CL_AWS_ACCOUNT_TYPE_ALIASES:-}"
+    local entry=""
+
+    if [[ -n "${explicit_aliases}" ]]; then
+        for entry in ${explicit_aliases}; do
+            printf '%s\n' "${entry}"
+        done
+    fi
+}
+
+validate_account_type_aliases() {
+    local types_output=""
+    local types_status=0
+    local types=()
+    local type_seen=()
+    local alias_seen=()
+    local entry=""
+    local account_type=""
+    local alias=""
+    local item=""
+
+    types_output="$(account_types 2>&1)"
+    types_status=$?
+    [[ ${types_status} -eq 0 ]] || die "${types_output}"
+    while IFS= read -r item; do
+        [[ -n "${item}" ]] && types+=("${item}")
+    done <<< "${types_output}"
+
+    while IFS= read -r entry; do
+        [[ -n "${entry}" ]] || continue
+        [[ "${entry}" == *:* ]] || die "invalid CL_AWS_ACCOUNT_TYPE_ALIASES entry '${entry}' (expected type:alias)"
+
+        account_type="$(to_lower "${entry%%:*}")"
+        alias="$(to_lower "${entry#*:}")"
+
+        contains_token "${account_type}" "${types[@]}" || die "alias maps unknown account type '${account_type}'"
+        [[ -n "${alias}" ]] || die "empty alias for account type '${account_type}'"
+
+        contains_token "${account_type}" "${type_seen[@]}" && die "duplicate account type alias mapping for '${account_type}'"
+        contains_token "${alias}" "${alias_seen[@]}" && die "duplicate account type alias '${alias}'"
+
+        type_seen+=("${account_type}")
+        alias_seen+=("${alias}")
+    done < <(account_type_alias_entries)
+}
+
+resolve_env_token() {
+    local env="$1"
+    local key
+
+    key="CL_AWS_ENV_ALIAS_$(env_suffix "${env}")"
+    if [[ -n "${!key:-}" ]]; then
+        printf '%s' "${!key}"
+    else
+        printf '%s' "${env}"
+    fi
+}
+
+resolve_account_type() {
+    local positional_token="$1"
+    local flag_token="$2"
+    local raw_token=""
+    local normalized_token=""
+    local default_account_type="${CL_AWS_ACCOUNT_TYPE_DEFAULT:-}"
+    local types_output=""
+    local types_status=0
+    local types=()
+    local entry=""
+    local account_type=""
+    local alias=""
+    local allowed=()
+    local item=""
+
+    validate_account_type_aliases
+    types_output="$(account_types 2>&1)"
+    types_status=$?
+    [[ ${types_status} -eq 0 ]] || die "${types_output}"
+    while IFS= read -r item; do
+        [[ -n "${item}" ]] && types+=("${item}")
+    done <<< "${types_output}"
+
+    if [[ -n "${positional_token}" ]]; then
+        raw_token="${positional_token}"
+    elif [[ -n "${flag_token}" ]]; then
+        raw_token="${flag_token}"
+    else
+        if [[ -n "${default_account_type}" ]]; then
+            raw_token="${default_account_type}"
+        else
+            raw_token="${types[0]}"
+        fi
+    fi
+
+    normalized_token="$(to_lower "${raw_token}")"
+
+    for account_type in "${types[@]}"; do
+        allowed+=("${account_type}")
+        if [[ "${normalized_token}" == "${account_type}" ]]; then
+            printf '%s' "${account_type}"
+            return 0
+        fi
+    done
+
+    while IFS= read -r entry; do
+        [[ -n "${entry}" ]] || continue
+        account_type="$(to_lower "${entry%%:*}")"
+        alias="$(to_lower "${entry#*:}")"
+        allowed+=("${alias}")
+        if [[ "${normalized_token}" == "${alias}" ]]; then
+            printf '%s' "${account_type}"
+            return 0
+        fi
+    done < <(account_type_alias_entries)
+
+    die "unknown account type token '${raw_token}' (allowed: ${allowed[*]})"
 }
 
 ocp_server_for_env() {
@@ -78,24 +415,36 @@ ocp_server_for_env() {
 
 aws_profile_for_env() {
     local env="$1"
+    local account_type="$2"
     local separator="${CL_AWS_PROFILE_SEPARATOR--}"
+    local env_token=""
 
     [[ -n "${CL_AWS_PROFILE_PREFIX:-}" ]] || die "missing CL_AWS_PROFILE_PREFIX in ${CONFIG_FILE}"
 
+    env_token="$(resolve_env_token "${env}")"
+
     if [[ -z "${separator}" ]] || [[ "${CL_AWS_PROFILE_PREFIX}" == *"${separator}" ]]; then
-        printf '%s' "${CL_AWS_PROFILE_PREFIX}${env}"
+        printf '%s%s%s' "${CL_AWS_PROFILE_PREFIX}" "${env_token}" "${separator}${account_type}"
     else
-        printf '%s' "${CL_AWS_PROFILE_PREFIX}${separator}${env}"
+        printf '%s%s%s%s%s' "${CL_AWS_PROFILE_PREFIX}" "${separator}" "${env_token}" "${separator}" "${account_type}"
     fi
 }
 
 eks_cluster_name_for_env() {
     local env="$1"
+    local account_type="$2"
+    local env_token=""
+    local cluster_name_template=""
 
     [[ -n "${CL_EKS_CLUSTER_NAME_TEMPLATE:-}" ]] || die "missing CL_EKS_CLUSTER_NAME_TEMPLATE in ${CONFIG_FILE}"
     [[ "${CL_EKS_CLUSTER_NAME_TEMPLATE}" == *"{env}"* ]] || die "CL_EKS_CLUSTER_NAME_TEMPLATE must contain {env}"
+    [[ "${CL_EKS_CLUSTER_NAME_TEMPLATE}" == *"{type}"* ]] || die "CL_EKS_CLUSTER_NAME_TEMPLATE must contain {type}"
 
-    printf '%s' "${CL_EKS_CLUSTER_NAME_TEMPLATE//\{env\}/${env}}"
+    env_token="$(resolve_env_token "${env}")"
+    cluster_name_template="${CL_EKS_CLUSTER_NAME_TEMPLATE//\{env\}/${env_token}}"
+    cluster_name_template="${cluster_name_template//\{type\}/${account_type}}"
+
+    printf '%s' "${cluster_name_template}"
 }
 
 run_assume() {
@@ -126,7 +475,44 @@ run_assume() {
         return $?
     fi
 
-    die "'assume' not found. Install granted/assume or ensure it's loaded"
+    return 127
+}
+
+has_assume() {
+    local assume_type=""
+    local assume_path=""
+
+    assume_type="$(type -t assume 2>/dev/null || true)"
+
+    case "${assume_type}" in
+        alias|function)
+            return 0
+            ;;
+        file)
+            assume_path="$(command -v assume 2>/dev/null || true)"
+            [[ -n "${assume_path}" ]] && [[ -r "${assume_path}" ]] && return 0
+            ;;
+    esac
+
+    [[ -r "/opt/homebrew/bin/assume" ]] && return 0
+
+    return 1
+}
+
+assume_is_required() {
+    local value="${CL_ASSUME_REQUIRED:-1}"
+
+    case "${value}" in
+        1|true|TRUE|yes|YES)
+            return 0
+            ;;
+        0|false|FALSE|no|NO)
+            return 1
+            ;;
+        *)
+            die "invalid CL_ASSUME_REQUIRED='${value}' (expected 0 or 1)"
+            ;;
+    esac
 }
 
 ensure_profile_ready() {
@@ -175,8 +561,9 @@ start_k9s() {
 
 login_eks() {
     local env="$1"
-    local context="$2"
-    local namespace="$3"
+    local account_type="$2"
+    local context="$3"
+    local namespace="$4"
     local region="${CL_EKS_REGION:-eu-north-1}"
     local profile=""
     local cluster_name=""
@@ -184,10 +571,28 @@ login_eks() {
     require_command aws
     require_command kubectl
 
-    profile="$(aws_profile_for_env "${env}")"
-    cluster_name="$(eks_cluster_name_for_env "${env}")"
+    profile="$(aws_profile_for_env "${env}" "${account_type}")"
+    cluster_name="$(eks_cluster_name_for_env "${env}" "${account_type}")"
 
-    run_assume "${profile}" || return $?
+    if assume_is_required; then
+        run_assume "${profile}" || {
+            local assume_rc=$?
+            if [[ ${assume_rc} -eq 127 ]]; then
+                die "'assume' not found. Install granted/assume or set CL_ASSUME_REQUIRED=0"
+            fi
+            return ${assume_rc}
+        }
+    else
+        run_assume "${profile}" || {
+            local assume_rc=$?
+            if [[ ${assume_rc} -eq 127 ]]; then
+                log_warn "assume not found; continuing because CL_ASSUME_REQUIRED=0"
+            else
+                return ${assume_rc}
+            fi
+        }
+    fi
+
     ensure_profile_ready "${profile}" || return $?
 
     aws eks update-kubeconfig \
@@ -226,11 +631,23 @@ login_ocp() {
     echo "cl: active context -> $(kubectl config current-context) (ns: ${namespace})"
 }
 
-parse_args() {
-    TARGET=""
+parse_login_args() {
+    LOGIN_PROVIDER=""
+    LOGIN_ENV=""
+    ACCOUNT_TYPE_TOKEN=""
+    ACCOUNT_TYPE_FLAG=""
     NAMESPACE="default"
     NAMESPACE_EXPLICIT=0
     START_K9S=0
+    SHOW_HELP=0
+
+    [[ $# -gt 0 ]] || die "missing provider for login (expected eks or ocp)"
+    LOGIN_PROVIDER="$1"
+    shift
+
+    [[ $# -gt 0 ]] || die "missing environment for login"
+    LOGIN_ENV="$1"
+    shift
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -245,9 +662,15 @@ parse_args() {
                 START_K9S=1
                 shift
                 ;;
+            --account-type)
+                shift
+                [[ -n "${1:-}" ]] || die "missing value for --account-type"
+                ACCOUNT_TYPE_FLAG="$1"
+                shift
+                ;;
             -h|--help)
-                usage
-                exit 0
+                SHOW_HELP=1
+                shift
                 ;;
             --)
                 shift
@@ -257,41 +680,168 @@ parse_args() {
                 die "unknown option '$1'"
                 ;;
             *)
-                [[ -z "${TARGET}" ]] || die "unexpected argument '$1'"
-                TARGET="$1"
-                shift
+                if [[ "${LOGIN_PROVIDER}" == "eks" ]] && [[ -z "${ACCOUNT_TYPE_TOKEN}" ]]; then
+                    ACCOUNT_TYPE_TOKEN="$1"
+                    shift
+                else
+                    die "unexpected argument '$1'"
+                fi
                 ;;
         esac
     done
 
-    [[ -n "${TARGET}" ]] || {
+    if [[ "${SHOW_HELP}" == "1" ]]; then
+        usage_login
+        exit 0
+    fi
+
+    if [[ "${LOGIN_PROVIDER}" != "eks" ]] && [[ -n "${ACCOUNT_TYPE_TOKEN}${ACCOUNT_TYPE_FLAG}" ]]; then
+        die "account type token/flag is only supported for 'login eks'"
+    fi
+}
+
+dispatch_login() {
+    local context=""
+    local resolved_account_type=""
+
+    case "${LOGIN_PROVIDER}" in
+        eks)
+            resolved_account_type="$(resolve_account_type "${ACCOUNT_TYPE_TOKEN}" "${ACCOUNT_TYPE_FLAG}")" || return $?
+            echo "cl: account type -> ${resolved_account_type}"
+            context="eks-${LOGIN_ENV}-${resolved_account_type}"
+            login_eks "${LOGIN_ENV}" "${resolved_account_type}" "${context}" "${NAMESPACE}"
+            ;;
+        ocp)
+            context="ocp-${LOGIN_ENV}"
+            login_ocp "${LOGIN_ENV}" "${context}" "${NAMESPACE}"
+            ;;
+        *)
+            die "unknown login provider '${LOGIN_PROVIDER}' (expected eks or ocp)"
+            ;;
+    esac
+
+    if [[ "${START_K9S}" == "1" ]]; then
+        start_k9s "${NAMESPACE}" "${NAMESPACE_EXPLICIT}"
+    fi
+}
+
+parse_config_args() {
+    CONFIG_ACTION=""
+    CONFIG_ENV=""
+    CONFIG_ACCOUNT_TYPE_TOKEN=""
+
+    [[ $# -gt 0 ]] || die "missing config action (expected show)"
+    CONFIG_ACTION="$1"
+    shift
+
+    case "${CONFIG_ACTION}" in
+        show)
+            [[ $# -gt 0 ]] || die "missing environment for 'config show'"
+            CONFIG_ENV="$1"
+            shift
+
+            if [[ $# -gt 0 ]]; then
+                case "$1" in
+                    -h|--help)
+                        usage_config
+                        exit 0
+                        ;;
+                    --*)
+                        die "unknown option '$1'"
+                        ;;
+                    *)
+                        CONFIG_ACCOUNT_TYPE_TOKEN="$1"
+                        shift
+                        ;;
+                esac
+            fi
+            ;;
+        *)
+            die "unknown config action '${CONFIG_ACTION}' (expected show)"
+            ;;
+    esac
+
+    if [[ $# -gt 0 ]]; then
+        die "unexpected argument '$1'"
+    fi
+}
+
+parse_subcommand() {
+    COMMAND="${1:-}"
+    [[ -n "${COMMAND}" ]] || {
         usage
         exit 2
     }
+
+    case "${COMMAND}" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        login)
+            shift
+            if [[ $# -eq 0 ]]; then
+                usage_login
+                exit 0
+            fi
+            case "$1" in
+                -h|--help)
+                    usage_login
+                    exit 0
+                    ;;
+            esac
+            parse_login_args "$@"
+            ;;
+        doctor)
+            shift
+            if [[ $# -gt 0 ]]; then
+                case "$1" in
+                    -h|--help)
+                        echo "Usage: cl doctor"
+                        exit 0
+                        ;;
+                esac
+                die "unexpected argument '$1'"
+            fi
+            ;;
+        config)
+            shift
+            parse_config_args "$@"
+            ;;
+        *)
+            die "unknown command '${COMMAND}' (expected login, doctor, or config)"
+            ;;
+    esac
 }
 
 dispatch() {
-    case "${TARGET}" in
-        eks-*)
-            login_eks "${TARGET#eks-}" "${TARGET}" "${NAMESPACE}"
+    case "${COMMAND}" in
+        login)
+            dispatch_login
             ;;
-        ocp-*)
-            login_ocp "${TARGET#ocp-}" "${TARGET}" "${NAMESPACE}"
+        doctor)
+            doctor_command
+            ;;
+        config)
+            case "${CONFIG_ACTION}" in
+                show)
+                    config_show_command "${CONFIG_ENV}" "${CONFIG_ACCOUNT_TYPE_TOKEN}"
+                    ;;
+                *)
+                    die "unknown config action '${CONFIG_ACTION}'"
+                    ;;
+            esac
             ;;
         *)
-            die "unknown target '${TARGET}' (expected eks-* or ocp-*)"
+            die "unknown command '${COMMAND}'"
             ;;
     esac
 }
 
 main() {
     load_local_config
-    parse_args "$@"
+    parse_subcommand "$@"
     dispatch
-
-    if [[ "${START_K9S}" == "1" ]]; then
-        start_k9s "${NAMESPACE}" "${NAMESPACE_EXPLICIT}"
-    fi
 }
 
 main "$@"

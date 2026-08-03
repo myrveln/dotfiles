@@ -43,12 +43,14 @@ It will adjust various macOS preferences, such as UI/UX enhancements, Dock setti
 
 ## Cluster login helper (`cl`)
 
-This repo includes a `cl` helper (installed as `~/bin/cl` from this repo's `bin/cl`) for logging into EKS (`eks-<env>`) and OpenShift (`ocp-<env>`).
+This repo includes a `cl` helper (installed as `~/bin/cl` from this repo's `bin/cl`) for logging into EKS and OpenShift.
 
-Options:
+Main commands:
 
-- `-n/--namespace <ns>`: sets the kube context default namespace (defaults to `default`)
-- `--k9s`: starts `k9s` after login/switch (uses `-n <ns>` only if you explicitly provided `-n`)
+- `cl login eks <env> [account-type-token] [-n <namespace>] [--k9s]`
+- `cl login ocp <env> [-n <namespace>] [--k9s]`
+- `cl config show <env> [account-type-token]`
+- `cl doctor`
 
 If installed, `kubectx`/`kubens` are used for switching context/namespace; otherwise `kubectl config ...` is used.
 
@@ -58,24 +60,34 @@ For OpenShift, API endpoints are intentionally **not** hardcoded. Configure them
 - Set per-environment variables like:
 	- `export CL_OCP_SERVER_TEST="https://api.<your-private-domain>:6443"`
 
-For EKS, AWS profile naming and cluster naming are also intentionally **not** hardcoded. Configure these in `~/.config/clusters.local`:
+For EKS, account types, profile naming, and cluster naming are intentionally **not** hardcoded. Configure these in `~/.config/clusters.local`:
 
+- `CL_AWS_ACCOUNT_TYPES` (for example `typea typeb`)
+- `CL_AWS_ACCOUNT_TYPE_DEFAULT` (for example `typea`)
+- `CL_AWS_ACCOUNT_TYPE_ALIASES` (for example `typea:ta typeb:tb`)
 - `CL_AWS_PROFILE_PREFIX`
-- `CL_AWS_PROFILE_SEPARATOR` (defaults to `-`; used as `${CL_AWS_PROFILE_PREFIX}${CL_AWS_PROFILE_SEPARATOR}${env}`)
-- `CL_EKS_CLUSTER_NAME_TEMPLATE` (must contain `{env}`)
+- `CL_AWS_PROFILE_SEPARATOR` (optional, default `-`)
+- Profile name is derived as `${CL_AWS_PROFILE_PREFIX}${CL_AWS_PROFILE_SEPARATOR}${env}${CL_AWS_PROFILE_SEPARATOR}${account_type}`
+- `CL_EKS_CLUSTER_NAME_TEMPLATE` (must contain `{env}` and `{type}`)
+- `CL_EKS_REGION` (optional, default `eu-north-1`)
+- `CL_ASSUME_REQUIRED` (optional, default `1`; set to `0` to allow login flow without `assume`)
+- EKS kube context alias is `eks-<env>-<account-type>` (for example `eks-qa-typea`)
 
 Then use:
 
 ```bash
-cl eks-test
-cl eks-test -n my-namespace
-cl eks-test --k9s
-cl eks-test -n my-namespace --k9s
+cl login eks qa
+cl login eks qa ta
+cl login eks devtest typeb
+cl login eks qa ta -n my-namespace --k9s
 
-cl ocp-test
-cl ocp-test -n my-namespace
-cl ocp-test --k9s
-cl ocp-test -n my-namespace --k9s
+cl login ocp test
+cl login ocp test -n my-namespace
+cl login ocp test --k9s
+
+cl config show qa
+cl config show qa tb
+cl doctor
 ```
 
 ## Private local config
