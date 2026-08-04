@@ -58,6 +58,7 @@ confirm-close-surface = true
 copy-on-select = false
 mouse-hide-while-typing = true
 mouse-reporting = true
+mouse-scroll-multiplier = 1
 
 # -----------------------------------------------------------------------------
 # Notifications and bell
