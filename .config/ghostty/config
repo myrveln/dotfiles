@@ -59,6 +59,8 @@ copy-on-select = false
 mouse-hide-while-typing = true
 mouse-reporting = true
 mouse-scroll-multiplier = 1
+macos-icon = custom
+macos-custom-icon = ~/.config/ghostty/icons/dracula.icns
 
 # -----------------------------------------------------------------------------
 # Notifications and bell
