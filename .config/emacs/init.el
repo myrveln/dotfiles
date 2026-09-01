@@ -1,4 +1,4 @@
-;; ~/.config/emacs/init.el
+;; ~/.config/emacs/init.el -*- lexical-binding: t; -*-
 
 ;; MELPA packages
 ;;
