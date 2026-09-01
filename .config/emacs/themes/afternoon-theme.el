@@ -1,4 +1,4 @@
-;;; afternoon-theme.el --- Dark color theme with a deep blue background
+;;; afternoon-theme.el --- Dark color theme with a deep blue background -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2013 Ozan Sener
 
