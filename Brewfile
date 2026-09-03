@@ -14,6 +14,7 @@ brew "gnupg"
 brew "pinentry-mac"
 
 # Editors/tools
+brew "cask"
 brew "emacs"
 brew "jq"
 brew "nmap"
@@ -26,6 +27,8 @@ brew "tree"
 brew "ripgrep"
 brew "container"
 brew "fastfetch"
+brew "tree-sitter"
+brew "tree-sitter-cli"
 
 # Cloud/Kubernetes
 brew "awscli"

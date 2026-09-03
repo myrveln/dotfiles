@@ -31,8 +31,19 @@ for FILE in ~/.{aliases,functions}; do
 done
 unset FILE
 
-# Bash completion on macOS
-[[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+# Bash completion on macOS with brew
+if type brew &>/dev/null; then
+    HOMEBREW_PREFIX="$(brew --prefix)"
+    if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]; then
+        source "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+    else
+        for COMPLETION in "${HOMEBREW_PREFIX}/etc/bash_completion.d/"*; do
+            # shellcheck source=/dev/null
+            [[ -r "${COMPLETION}" ]] && source "${COMPLETION}"
+        done
+    fi
+fi
+unset HOMEBREW_PREFIX COMPLETION
 
 # Add tab completion for SSH hostnames based on tracked and local SSH config, ignoring wildcards
 SSH_COMPLETION_FILES=()

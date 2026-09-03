@@ -52,7 +52,8 @@ done < <(brew doctor --list-checks)
 brew doctor "${doctor_checks[@]}"
 
 # Upgrade any already-installed formulae.
-brew upgrade --yes
+brew upgrade --formula --yes
+brew upgrade --cask --yes
 
 # Save Homebrew’s installed location.
 BREW_PREFIX=$(brew --prefix)
