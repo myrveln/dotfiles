@@ -59,7 +59,13 @@ brew upgrade --cask --yes
 BREW_PREFIX=$(brew --prefix)
 
 # Trust the taps we need (this must be done before bundle)
-export HOMEBREW_NO_REQUIRE_TAP_TRUST="1"
+if brew trust --help >/dev/null 2>&1; then
+    while read -r tap; do
+        brew trust --tap "${tap}"
+    done < <(grep -oE '^tap "[^"]+"' "${SCRIPT_DIR}/Brewfile" | sed -E 's/^tap "(.+)"$/\1/')
+else
+    export HOMEBREW_NO_REQUIRE_TAP_TRUST="1"
+fi
 
 # Install packages/casks/taps from Brewfile.
 brew bundle --file "${SCRIPT_DIR}/Brewfile"
