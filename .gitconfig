@@ -43,13 +43,14 @@
 	changed = green
 	untracked = cyan
 [alias]
-	graph = log --graph --oneline -20
-	rebase-master = !git checkout master && git pull && git checkout - && git rebase master $1
-	remaster = !git checkout master && git pull && git checkout - && git rebase master $1
-	pushnew = !git push --set-upstream origin $(git branch --show-current)
-	prune = !"git branch -vv | grep -E '\\[origin/.+: gone\\]' | awk '{print $1}' | grep -vE '^main|^master|^\\*'" | xargs git branch -D
 	amend = commit --amend --no-edit
 	amendpush = !git add . && git commit --amend --no-edit && git push --force
+  cmp = !git checkout master && git pull
+	graph = log --graph --oneline -20
+	pushnew = !git push --set-upstream origin $(git branch --show-current)
+	prune = !"git branch -vv | grep -E '\\[origin/.+: gone\\]' | awk '{print $1}' | grep -vE '^main|^master|^\\*'" | xargs git branch -D
+	rebase-master = !git checkout master && git pull && git checkout - && git rebase master $1
+	remaster = !git checkout master && git pull && git checkout - && git rebase master $1
 [commit]
 	# Prefer enabling commit signing in ~/.config/gitconfig.local to avoid
 	# breaking environments without GPG set up.
