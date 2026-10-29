@@ -25,8 +25,8 @@ alias ff="fastfetch --pipe false"
 # Get week number
 alias week='date +%V'
 
-# Recursively delete `.DS_Store` files
-alias cleanup="find . -type f -name '*.DS_Store' -ls -delete"
+# Recursively delete `.DS_Store` files, .terraform folders, and terraform lock files
+alias cleanup="find . -type f \( -name '*.DS_Store' -o -name '.terraform.lock.hcl' \) -ls -delete; find . -type d -name '.terraform' -prune -ls -exec rm -rf {} +"
 
 # Go away from the keyboard short cut
 alias afk="pmset sleepnow"
