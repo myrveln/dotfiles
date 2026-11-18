@@ -1,5 +1,9 @@
 ;; ~/.config/emacs/init.el -*- lexical-binding: t; -*-
 
+;;; Load theme immediately before packages
+(add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
+(load-theme 'afternoon t)
+
 ;; MELPA packages
 ;;
 ;; enable basic packaging support
@@ -37,11 +41,6 @@
 (setq inhibit-startup-message t)     ;; hide the startup message
 (setq diff-switches "-u")            ;; default to unified diffs
 (setq require-final-newline 'query)  ;; always end with newline
-
-;;; load themes in ~/.config/emacs/themes folder
-(setq custom--inhibit-theme-enable nil)
-;(add-to-list custom-theme-load-path "~/.emacs.d/themes/")
-(load-file "~/.config/emacs/themes/afternoon-theme.el")
 
 ;; display line numbers on the left side
 ;;(add-hook 'prog-mode-hook 'display-line-numbers-mode)
