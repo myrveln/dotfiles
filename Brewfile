@@ -1,6 +1,4 @@
 # Homebrew bundle (run: brew bundle)
-
-tap "aws/tap"
 tap "hashicorp/tap"
 tap "terraform-docs/tap"
 
@@ -48,7 +46,6 @@ brew "openshift-cli"       # oc
 brew "granted"
 
 # Tapped formulae
-brew "aws/tap/aws-sam-cli"
 brew "hashicorp/tap/terraform"
 brew "terraform-docs/tap/terraform-docs"
 
