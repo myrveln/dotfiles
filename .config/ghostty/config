@@ -23,7 +23,7 @@ macos-titlebar-proxy-icon = hidden
 macos-titlebar-style = tabs
 split-inherit-working-directory = false
 tab-inherit-working-directory = false
-title = " "
+#title = " "
 window-height = 40
 window-inherit-working-directory = false
 window-padding-balance = true
@@ -48,7 +48,7 @@ cursor-style-blink = false
 # Shell integration
 # -----------------------------------------------------------------------------
 shell-integration = detect
-shell-integration-features = no-title,no-cursor,sudo,ssh-env,ssh-terminfo,path
+shell-integration-features = no-cursor,sudo,ssh-env,ssh-terminfo,path
 
 # -----------------------------------------------------------------------------
 # Interaction and UX
